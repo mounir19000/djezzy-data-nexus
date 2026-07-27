@@ -5,6 +5,8 @@ import NationalOperationsDashboard from './pages/national/NationalOperationsDash
 import NationalAnalyticsDashboard from './pages/national/NationalAnalyticsDashboard';
 import DigitalTwinDashboard from './pages/twin/DigitalTwinDashboard';
 import PowerFlowView from './pages/twin/PowerFlowView';
+import IncidentDiagnosisCenter from './pages/operations/IncidentDiagnosisCenter';
+import TicketKanban from './pages/operations/TicketKanban';
 
 // Placeholder Pages (To be built in subsequent phases)
 const PlaceholderPage = ({ title }: { title: string }) => (
@@ -14,7 +16,6 @@ const PlaceholderPage = ({ title }: { title: string }) => (
   </div>
 );
 
-const IncidentDiagnosisCenter = () => <PlaceholderPage title="Incident Center" />;
 const MaintenanceCalendar = () => <PlaceholderPage title="Maintenance & Scheduling" />;
 const ExecutiveReportGenerator = () => <PlaceholderPage title="Executive Reports" />;
 const SettingsPage = () => <PlaceholderPage title="Platform Settings" />;
@@ -29,6 +30,7 @@ function App() {
           <Route path="twin" element={<DigitalTwinDashboard />} />
           <Route path="power-flow" element={<PowerFlowView />} />
           <Route path="incidents" element={<IncidentDiagnosisCenter />} />
+          <Route path="tickets" element={<TicketKanban />} />
           <Route path="maintenance" element={<MaintenanceCalendar />} />
           <Route path="reports" element={<ExecutiveReportGenerator />} />
           <Route path="settings" element={<SettingsPage />} />

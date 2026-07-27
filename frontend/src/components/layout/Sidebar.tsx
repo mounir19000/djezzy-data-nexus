@@ -41,6 +41,10 @@ const Sidebar = () => {
           <ShieldAlert className="w-5 h-5" />
           <span>Incident Center</span>
         </NavLink>
+        <NavLink to="/tickets" className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
+          <FileText className="w-5 h-5" />
+          <span>Ticket Kanban</span>
+        </NavLink>
         <NavLink to="/maintenance" className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
           <Calendar className="w-5 h-5" />
           <span>Maintenance</span>
