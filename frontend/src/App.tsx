@@ -11,6 +11,8 @@ import MaintenanceCalendar from './pages/operations/MaintenanceCalendar';
 import KnowledgeCenter from './pages/operations/KnowledgeCenter';
 import ExecutiveReportGenerator from './pages/national/ExecutiveReportGenerator';
 import SettingsPage from './pages/settings/SettingsPage';
+import LoginPage from './pages/auth/LoginPage';
+import { ProtectedRoute, RoleBoundary } from './components/layout/ProtectedRoute';
 
 // Placeholder Pages (To be built in subsequent phases)
 const PlaceholderPage = ({ title }: { title: string }) => (
@@ -26,8 +28,15 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<MainLayout />}>
-          <Route index element={<NationalOperationsDashboard />} />
+        <Route path="/login" element={<LoginPage />} />
+        
+        <Route path="/" element={
+          <ProtectedRoute>
+            <MainLayout />
+          </ProtectedRoute>
+        }>
+          {/* Default Route */}
+          <Route index element={<Navigate to="/twin" replace />} />
           <Route path="analytics" element={<NationalAnalyticsDashboard />} />
           <Route path="twin" element={<DigitalTwinDashboard />} />
           <Route path="power-flow" element={<PowerFlowView />} />
@@ -36,7 +45,11 @@ function App() {
           <Route path="maintenance" element={<MaintenanceCalendar />} />
           <Route path="knowledge" element={<KnowledgeCenter />} />
           <Route path="reports" element={<ExecutiveReportGenerator />} />
-          <Route path="settings" element={<SettingsPage />} />
+          <Route path="settings" element={
+            <RoleBoundary allowedRoles={['Super Admin']}>
+              <SettingsPage />
+            </RoleBoundary>
+          } />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
