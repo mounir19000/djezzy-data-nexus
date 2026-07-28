@@ -3,9 +3,13 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import { useAppStore } from '../../store/useAppStore';
+import { useSocket } from '../../hooks/useSocket';
 
 const MainLayout = () => {
   const { isSidebarOpen } = useAppStore();
+
+  // Initialize real-time telemetry connection
+  useSocket();
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
