@@ -1,7 +1,9 @@
 import React from 'react';
 import { Calendar as CalendarIcon, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { useMaintenanceTasks } from '../../hooks/useMaintenance';
 
 const MaintenanceCalendar = () => {
+  const { data: tasks, isLoading } = useMaintenanceTasks();
   return (
     <div className="h-full flex flex-col space-y-6">
       <header className="flex justify-between items-end">
@@ -30,42 +32,40 @@ const MaintenanceCalendar = () => {
           <h3 className="text-lg font-sans font-medium text-on-surface mb-4">Upcoming Tasks</h3>
           <div className="flex-1 overflow-y-auto space-y-4 pr-2">
             
-            <div className="bg-background border border-border-subtle rounded-md p-4">
-              <div className="flex justify-between items-start mb-2">
-                <span className="text-sm font-sans font-medium text-on-surface">Generator Oil Change</span>
-                <span className="text-xs font-mono text-status-critical bg-status-critical/10 px-2 py-0.5 rounded">Overdue</span>
-              </div>
-              <p className="text-xs text-on-surface-variant font-mono mb-2">Equipment: GEN-01 (Blida)</p>
-              <div className="flex justify-between items-center text-xs">
-                <span className="flex items-center gap-1 text-on-surface-variant"><AlertTriangle className="w-3 h-3 text-status-critical" /> Was due Jul 25</span>
-                <span className="text-on-surface">Assigned: <span className="font-medium">Amine</span></span>
-              </div>
-            </div>
+            {isLoading ? (
+              <div className="text-on-surface-variant text-sm">Loading tasks...</div>
+            ) : tasks?.length === 0 ? (
+              <div className="text-on-surface-variant text-sm italic">No upcoming maintenance scheduled.</div>
+            ) : (
+              tasks?.map((task: any) => {
+                const isOverdue = new Date(task.scheduledDate) < new Date() && task.status !== 'completed';
+                const isSoon = new Date(task.scheduledDate).getTime() - new Date().getTime() < 172800000; // < 2 days
+                
+                return (
+                  <div key={task.id} className={`bg-background border rounded-md p-4 ${isOverdue ? 'border-status-critical' : isSoon ? 'border-l-4 border-l-status-warning' : 'border-border-subtle'}`}>
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-sm font-sans font-medium text-on-surface">{task.title}</span>
+                      <span className={`text-xs font-mono px-2 py-0.5 rounded ${
+                        isOverdue ? 'text-status-critical bg-status-critical/10' : 
+                        isSoon ? 'text-status-warning bg-status-warning/10' : 
+                        'text-status-healthy bg-status-healthy/10'
+                      }`}>
+                        {isOverdue ? 'Overdue' : new Date(task.scheduledDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-xs text-on-surface-variant font-mono mb-2">Equipment: {task.equipment?.name || 'General'}</p>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="flex items-center gap-1 text-on-surface-variant">
+                        {isOverdue ? <AlertTriangle className="w-3 h-3 text-status-critical" /> : <Clock className="w-3 h-3" />} 
+                        {new Date(task.scheduledDate).toLocaleDateString()}
+                      </span>
+                      <span className="text-on-surface">Assigned: <span className="font-medium">{task.assignee ? task.assignee.firstName : 'Unassigned'}</span></span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
 
-            <div className="bg-background border border-border-subtle rounded-md p-4 border-l-4 border-l-status-warning">
-              <div className="flex justify-between items-start mb-2">
-                <span className="text-sm font-sans font-medium text-on-surface">CRAC Filter Replacement</span>
-                <span className="text-xs font-mono text-status-warning bg-status-warning/10 px-2 py-0.5 rounded">Tomorrow</span>
-              </div>
-              <p className="text-xs text-on-surface-variant font-mono mb-2">Equipment: CRAC-02 (Oran_04)</p>
-              <div className="flex justify-between items-center text-xs">
-                <span className="flex items-center gap-1 text-on-surface-variant"><Clock className="w-3 h-3" /> Jul 29</span>
-                <span className="text-on-surface">Assigned: <span className="font-medium">Karim</span></span>
-              </div>
-            </div>
-
-            <div className="bg-background border border-border-subtle rounded-md p-4 border-l-4 border-l-status-healthy">
-              <div className="flex justify-between items-start mb-2">
-                <span className="text-sm font-sans font-medium text-on-surface">Battery Bank Load Test</span>
-                <span className="text-xs font-mono text-status-healthy bg-status-healthy/10 px-2 py-0.5 rounded">In 3 days</span>
-              </div>
-              <p className="text-xs text-on-surface-variant font-mono mb-2">Equipment: BATT-01 (Blida)</p>
-              <div className="flex justify-between items-center text-xs">
-                <span className="flex items-center gap-1 text-on-surface-variant"><Clock className="w-3 h-3" /> Jul 31</span>
-                <span className="text-on-surface">Assigned: <span className="font-medium">Yacine</span></span>
-              </div>
-            </div>
-            
           </div>
         </div>
       </div>

@@ -1,15 +1,10 @@
 import React, { useState } from 'react';
 import { Search, Book, HelpCircle, FileText, ChevronRight } from 'lucide-react';
-
-const knowledgeBase = [
-  { id: 'KB-001', title: 'UPS Phase Synchronization Failure Recovery', category: 'Power Systems', tags: ['UPS', 'Critical', 'Recovery'] },
-  { id: 'KB-002', title: 'Generator ATS Switchover Delay Troubleshooting', category: 'Power Systems', tags: ['Generator', 'ATS'] },
-  { id: 'KB-003', title: 'CRAC Unit Return Temp Calibration', category: 'Cooling', tags: ['CRAC', 'Sensor'] },
-  { id: 'KB-004', title: 'Battery Bank Internal Resistance Test Guide', category: 'Power Systems', tags: ['Battery', 'Maintenance'] },
-];
+import { useKnowledgeBase } from '../../hooks/useKnowledge';
 
 const KnowledgeCenter = () => {
   const [search, setSearch] = useState('');
+  const { data: knowledgeBase, isLoading } = useKnowledgeBase();
 
   return (
     <div className="h-full flex flex-col space-y-6">
@@ -28,19 +23,16 @@ const KnowledgeCenter = () => {
           <ul className="space-y-2">
             <li className="flex items-center justify-between text-sm font-sans font-medium text-primary bg-bg-secondary p-2 rounded-md cursor-pointer">
               <span>All Articles</span>
-              <span className="text-xs bg-background px-2 py-0.5 rounded text-on-surface-variant">142</span>
+              <span className="text-xs bg-background px-2 py-0.5 rounded text-on-surface-variant">{knowledgeBase?.length || 0}</span>
             </li>
             <li className="flex items-center justify-between text-sm font-sans text-on-surface hover:bg-bg-secondary p-2 rounded-md cursor-pointer transition-colors">
               <span>Power Systems</span>
-              <span className="text-xs bg-bg-secondary px-2 py-0.5 rounded text-on-surface-variant">45</span>
             </li>
             <li className="flex items-center justify-between text-sm font-sans text-on-surface hover:bg-bg-secondary p-2 rounded-md cursor-pointer transition-colors">
               <span>Cooling & HVAC</span>
-              <span className="text-xs bg-bg-secondary px-2 py-0.5 rounded text-on-surface-variant">38</span>
             </li>
             <li className="flex items-center justify-between text-sm font-sans text-on-surface hover:bg-bg-secondary p-2 rounded-md cursor-pointer transition-colors">
               <span>Network & Telemetry</span>
-              <span className="text-xs bg-bg-secondary px-2 py-0.5 rounded text-on-surface-variant">29</span>
             </li>
           </ul>
         </div>
@@ -60,7 +52,9 @@ const KnowledgeCenter = () => {
           </div>
 
           <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-            {knowledgeBase.map(kb => (
+            {isLoading ? (
+              <div className="text-on-surface-variant text-sm">Loading articles...</div>
+            ) : knowledgeBase?.filter((kb: any) => kb.title.toLowerCase().includes(search.toLowerCase())).map((kb: any) => (
               <div key={kb.id} className="bg-background border border-border-subtle rounded-md p-4 flex items-center justify-between hover:border-primary cursor-pointer transition-colors group">
                 <div className="flex items-start gap-4">
                   <div className="p-2 bg-bg-secondary rounded-md group-hover:bg-primary/10 transition-colors">
@@ -69,7 +63,7 @@ const KnowledgeCenter = () => {
                   <div>
                     <h4 className="font-sans font-medium text-on-surface mb-1 group-hover:text-primary transition-colors">{kb.title}</h4>
                     <div className="flex items-center gap-3">
-                      <span className="text-xs font-mono text-on-surface-variant">{kb.id}</span>
+                      <span className="text-xs font-mono text-on-surface-variant">{kb.id.substring(0,8)}</span>
                       <span className="text-xs font-sans text-on-surface-variant bg-bg-secondary px-2 py-0.5 rounded">{kb.category}</span>
                     </div>
                   </div>

@@ -1,14 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Save, AlertTriangle, Shield, CheckCircle } from 'lucide-react';
-
-const rulesConfig = [
-  { id: 'R-01', name: 'Critical Temperature Threshold', description: 'Triggers critical alarm if any Battery Room exceeds this value.', value: '28', unit: '°C' },
-  { id: 'R-02', name: 'UPS Bypass Timeout', description: 'Grace period before UPS bypass triggers a severity escalation.', value: '5', unit: 'minutes' },
-  { id: 'R-03', name: 'Grid Voltage Sag Tolerance', description: 'Minimum voltage before ATS attempts switchover.', value: '190', unit: 'V' },
-];
+import { useExpertRules, useUpdateRule } from '../../hooks/useSettings';
 
 const SettingsPage = () => {
-  const [rules, setRules] = useState(rulesConfig);
+  const { data: expertRules, isLoading } = useExpertRules();
+  const { mutate: updateRule } = useUpdateRule();
+  const [localRules, setLocalRules] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (expertRules) {
+      setLocalRules(expertRules);
+    }
+  }, [expertRules]);
+
+  const handleSave = () => {
+    localRules.forEach(rule => {
+      // Find original to check if modified
+      const original = expertRules?.find((r: any) => r.id === rule.id);
+      if (original && original.threshold !== rule.threshold) {
+        updateRule({ id: rule.id, threshold: Number(rule.threshold) });
+      }
+    });
+  };
 
   return (
     <div className="h-full flex flex-col space-y-6 max-w-4xl mx-auto w-full">
@@ -35,11 +48,13 @@ const SettingsPage = () => {
           </div>
 
           <div className="space-y-4">
-            {rules.map((rule, idx) => (
+            {isLoading ? (
+              <div className="text-on-surface-variant text-sm">Loading rules...</div>
+            ) : localRules.map((rule, idx) => (
               <div key={rule.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center bg-background border border-border-subtle p-4 rounded-md">
                 <div className="md:col-span-8">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-mono text-on-surface-variant bg-bg-secondary px-1.5 py-0.5 rounded">{rule.id}</span>
+                    <span className="text-xs font-mono text-on-surface-variant bg-bg-secondary px-1.5 py-0.5 rounded">{rule.id.substring(0,8)}</span>
                     <h4 className="font-sans font-medium text-on-surface">{rule.name}</h4>
                   </div>
                   <p className="text-sm text-on-surface-variant">{rule.description}</p>
@@ -47,11 +62,11 @@ const SettingsPage = () => {
                 <div className="md:col-span-4 flex items-center justify-end gap-2">
                   <input 
                     type="number" 
-                    value={rule.value} 
+                    value={rule.threshold} 
                     onChange={(e) => {
-                      const newRules = [...rules];
-                      newRules[idx].value = e.target.value;
-                      setRules(newRules);
+                      const newRules = [...localRules];
+                      newRules[idx].threshold = e.target.value;
+                      setLocalRules(newRules);
                     }}
                     className="w-24 bg-bg-surface border border-border-subtle rounded-md px-3 py-1.5 text-on-surface font-mono text-right focus:border-primary focus:outline-none"
                   />
@@ -63,10 +78,16 @@ const SettingsPage = () => {
         </div>
 
         <div className="px-6 py-4 border-t border-border-subtle bg-bg-secondary flex justify-end gap-3">
-          <button className="px-4 py-2 text-sm font-medium text-on-surface hover:bg-background rounded-md transition-colors">
+          <button 
+            onClick={() => setLocalRules(expertRules || [])}
+            className="px-4 py-2 text-sm font-medium text-on-surface hover:bg-background rounded-md transition-colors"
+          >
             Reset to Defaults
           </button>
-          <button className="bg-primary text-on-primary px-4 py-2 rounded-md font-sans font-medium hover:bg-primary-fixed-dim transition-colors flex items-center gap-2">
+          <button 
+            onClick={handleSave}
+            className="bg-primary text-on-primary px-4 py-2 rounded-md font-sans font-medium hover:bg-primary-fixed-dim transition-colors flex items-center gap-2"
+          >
             <Save className="w-4 h-4" /> Save Configuration
           </button>
         </div>

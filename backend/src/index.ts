@@ -8,6 +8,9 @@ import authRoutes from './routes/auth';
 import notificationRoutes from './routes/notifications';
 import incidentsRoutes from './routes/incidents';
 import ticketsRoutes from './routes/tickets';
+import maintenanceRoutes from './routes/maintenance';
+import knowledgeRoutes from './routes/knowledge';
+import settingsRoutes from './routes/settings';
 import { startTelemetrySimulation } from './services/telemetrySimulator';
 
 dotenv.config();
@@ -31,6 +34,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/incidents', incidentsRoutes);
 app.use('/api/tickets', ticketsRoutes);
+app.use('/api/maintenance', maintenanceRoutes);
+app.use('/api/knowledge', knowledgeRoutes);
+app.use('/api/settings', settingsRoutes);
 app.get('/api/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'healthy', message: 'Djezzy SSOP API is running' });
 });
