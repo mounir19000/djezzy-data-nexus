@@ -1,19 +1,33 @@
-import React, { useState } from 'react';
-import { Search, Book, HelpCircle, FileText, ChevronRight, X, Plus } from 'lucide-react';
-import { useKnowledgeBase } from '../../hooks/useKnowledge';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
+import { Search, Book, ChevronRight, X, Plus } from 'lucide-react';
+import { useCreateKnowledgeArticle, useKnowledgeBase } from '../../hooks/useKnowledge';
 import { useAppStore } from '../../store/useAppStore';
 
 const KnowledgeCenter = () => {
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { data: knowledgeBase, isLoading } = useKnowledgeBase();
+  const { mutate: createArticle, isPending: isCreating } = useCreateKnowledgeArticle();
   const { user } = useAppStore();
+  const [formError, setFormError] = useState<string | null>(null);
 
   const canCreate = user?.role === 'Super Admin' || user?.role === 'Engineer';
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsModalOpen(false);
+    setFormError(null);
+    const data = new FormData(e.currentTarget);
+
+    createArticle({
+      title: String(data.get('title') || ''),
+      category: String(data.get('category') || ''),
+      tags: String(data.get('tags') || ''),
+      content: String(data.get('content') || '')
+    }, {
+      onSuccess: () => setIsModalOpen(false),
+      onError: (error) => setFormError(error.message)
+    });
   };
 
   return (
@@ -72,7 +86,12 @@ const KnowledgeCenter = () => {
           <div className="flex-1 overflow-y-auto space-y-4 pr-2">
             {isLoading ? (
               <div className="text-on-surface-variant text-sm">Loading articles...</div>
-            ) : knowledgeBase?.filter((kb: any) => kb.title.toLowerCase().includes(search.toLowerCase())).map((kb: any) => (
+            ) : knowledgeBase?.filter((kb: any) => {
+              const query = search.toLowerCase();
+              return kb.title.toLowerCase().includes(query)
+                || kb.category.toLowerCase().includes(query)
+                || kb.tags?.some((tag: string) => tag.toLowerCase().includes(query));
+            }).map((kb: any) => (
               <div key={kb.id} className="bg-background border border-border-subtle rounded-md p-4 flex items-center justify-between hover:border-primary cursor-pointer transition-colors group">
                 <div className="flex items-start gap-4">
                   <div className="p-2 bg-bg-secondary rounded-md group-hover:bg-primary/10 transition-colors">
@@ -84,6 +103,7 @@ const KnowledgeCenter = () => {
                       <span className="text-xs font-mono text-on-surface-variant">{kb.id.substring(0,8)}</span>
                       <span className="text-xs font-sans text-on-surface-variant bg-bg-secondary px-2 py-0.5 rounded">{kb.category}</span>
                     </div>
+                    <p className="text-xs text-on-surface-variant mt-2 line-clamp-2">{kb.content}</p>
                   </div>
                 </div>
                 <ChevronRight className="w-5 h-5 text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -107,12 +127,12 @@ const KnowledgeCenter = () => {
             <form onSubmit={handleSubmit} className="p-4 space-y-4 flex-1 overflow-y-auto">
               <div>
                 <label className="block text-sm font-medium text-on-surface mb-1">Title</label>
-                <input required type="text" className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface focus:outline-none focus:border-primary" placeholder="e.g. UPS Failure Recovery Procedure" />
+                <input required name="title" type="text" className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface focus:outline-none focus:border-primary" placeholder="e.g. UPS Failure Recovery Procedure" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-on-surface mb-1">Category</label>
-                  <select required className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface focus:outline-none focus:border-primary">
+                  <select required name="category" className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface focus:outline-none focus:border-primary">
                     <option value="Power Systems">Power Systems</option>
                     <option value="Cooling & HVAC">Cooling & HVAC</option>
                     <option value="Network & Telemetry">Network & Telemetry</option>
@@ -121,7 +141,7 @@ const KnowledgeCenter = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-on-surface mb-1">Tags (comma separated)</label>
-                  <input type="text" className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface focus:outline-none focus:border-primary" placeholder="ups, emergency, power" />
+                  <input name="tags" type="text" className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface focus:outline-none focus:border-primary" placeholder="ups, emergency, power" />
                 </div>
               </div>
               <div className="flex-1 flex flex-col min-h-[300px]">
@@ -129,11 +149,14 @@ const KnowledgeCenter = () => {
                   <span>Content (Markdown format)</span>
                   <span className="text-xs text-on-surface-variant">Use # for headings, * for lists</span>
                 </label>
-                <textarea required className="flex-1 w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface font-mono text-sm focus:outline-none focus:border-primary" placeholder="# Context\nDescribe the context...\n\n## Resolution\nSteps to resolve..."></textarea>
+                <textarea required name="content" className="flex-1 w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface font-mono text-sm focus:outline-none focus:border-primary" placeholder="# Context\nDescribe the context...\n\n## Resolution\nSteps to resolve..."></textarea>
               </div>
+              {formError && <div className="text-sm text-status-warning">{formError}</div>}
               <div className="flex justify-end gap-3 pt-4 border-t border-border-subtle mt-4">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-md font-medium text-on-surface hover:bg-bg-secondary transition-colors">Cancel</button>
-                <button type="submit" className="bg-primary text-on-primary px-4 py-2 rounded-md font-medium hover:bg-primary-fixed-dim transition-colors">Save Article</button>
+                <button disabled={isCreating} type="submit" className="bg-primary text-on-primary px-4 py-2 rounded-md font-medium hover:bg-primary-fixed-dim transition-colors disabled:opacity-50">
+                  {isCreating ? 'Saving...' : 'Save Article'}
+                </button>
               </div>
             </form>
           </div>

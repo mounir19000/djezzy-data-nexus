@@ -19,9 +19,13 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(401).json({ error: { message: 'Invalid email or password' } });
     }
 
-    // In a real app, compare bcrypt hash. For this MVP, we use mock passwords
-    if (user.passwordHash !== 'hashed_password_mock' && password !== 'admin123') {
-       return res.status(401).json({ error: { message: 'Invalid email or password' } });
+    // In a real app, compare bcrypt hash. For this MVP, all seeded users share admin123.
+    if (user.passwordHash === 'hashed_password_mock') {
+      if (password !== 'admin123') {
+        return res.status(401).json({ error: { message: 'Invalid email or password' } });
+      }
+    } else if (password !== user.passwordHash) {
+      return res.status(401).json({ error: { message: 'Invalid email or password' } });
     }
 
     const token = jwt.sign(

@@ -9,7 +9,12 @@ router.get('/metrics', requireAuth, async (req, res: Response) => {
     const totalSites = await prisma.site.count();
     const sites = await prisma.site.findMany();
     const healthySites = sites.filter((s: any) => s.overallHealth >= 90).length;
-    const criticalSites = sites.filter((s: any) => s.overallHealth < 80).length;
+    const warningSites = sites.filter((s: any) => s.overallHealth >= 70 && s.overallHealth < 90).length;
+    const criticalSites = sites.filter((s: any) => s.overallHealth < 70).length;
+
+    const activeIncidents = await prisma.alarm.count({
+      where: { active: true }
+    });
 
     const openTickets = await prisma.ticket.count({
       where: { status: { notIn: ['resolved', 'closed'] } }
@@ -19,7 +24,6 @@ router.get('/metrics', requireAuth, async (req, res: Response) => {
       where: { status: { notIn: ['completed'] } }
     });
 
-    // Mock AI diagnoses count and Closed Tickets today (just for dashboard visual)
     const closedTicketsToday = await prisma.ticket.count({
       where: { 
         status: 'closed',
@@ -44,10 +48,13 @@ router.get('/metrics', requireAuth, async (req, res: Response) => {
       overallHealthScore: (sites.reduce((acc: number, s: any) => acc + s.overallHealth, 0) / (totalSites || 1)).toFixed(1),
       totalSites,
       healthySites,
+      warningSites,
       criticalSites,
+      activeIncidents,
       openTickets,
       pendingMaintenance,
       closedTicketsToday,
+      sites,
       feed: [
         ...recentAlarms.map((a: any) => ({
           id: a.id,

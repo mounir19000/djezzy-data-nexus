@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { prisma } from '../config/prisma';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { generateDiagnosis } from '../services/expertSystem';
 
 const router = Router();
 
@@ -19,7 +20,10 @@ router.get('/', requireAuth, async (req: any, res: Response) => {
       },
       orderBy: { createdAt: 'desc' }
     });
-    res.json(alarms);
+    res.json(alarms.map((alarm: any) => ({
+      ...alarm,
+      diagnosis: generateDiagnosis(alarm)
+    })));
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch alarms' });
   }

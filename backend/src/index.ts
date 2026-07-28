@@ -13,6 +13,7 @@ import knowledgeRoutes from './routes/knowledge';
 import settingsRoutes from './routes/settings';
 import dashboardRoutes from './routes/dashboard';
 import sitesRoutes from './routes/sites';
+import usersRoutes from './routes/users';
 import { startTelemetrySimulation } from './services/telemetrySimulator';
 
 dotenv.config();
@@ -44,6 +45,7 @@ app.use('/api/knowledge', knowledgeRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/sites', sitesRoutes);
+app.use('/api/users', usersRoutes);
 app.get('/api/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'healthy', message: 'Djezzy SSOP API is running' });
 });

@@ -5,7 +5,7 @@ import { requireAuth, requireRole } from '../middleware/auth';
 const router = Router();
 
 // Get expert rules
-router.get('/rules', requireAuth, requireRole(['Super Admin', 'Engineer']), async (req, res: Response) => {
+router.get('/rules', requireAuth, requireRole(['Super Admin']), async (req, res: Response) => {
   try {
     const { siteId } = req.query;
     const whereClause = siteId ? { siteId: String(siteId) } : {};
@@ -21,7 +21,7 @@ router.get('/rules', requireAuth, requireRole(['Super Admin', 'Engineer']), asyn
 });
 
 // Update a rule threshold
-router.put('/rules/:id', requireAuth, requireRole(['Super Admin', 'Engineer']), async (req: any, res: Response) => {
+router.put('/rules/:id', requireAuth, requireRole(['Super Admin']), async (req: any, res: Response) => {
   try {
     const { threshold } = req.body;
     if (threshold === undefined) {

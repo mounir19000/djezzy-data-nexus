@@ -1,4 +1,3 @@
-import React from 'react';
 import { FileText, Download, Filter } from 'lucide-react';
 
 const ExecutiveReportGenerator = () => {

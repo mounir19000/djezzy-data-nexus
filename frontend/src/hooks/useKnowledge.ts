@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 const fetchKnowledge = async () => {
   const token = localStorage.getItem('djezzy_token');
@@ -13,5 +13,32 @@ export const useKnowledgeBase = () => {
   return useQuery({
     queryKey: ['knowledge'],
     queryFn: fetchKnowledge,
+  });
+};
+
+export const useCreateKnowledgeArticle = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      title: string;
+      category: string;
+      tags: string;
+      content: string;
+    }) => {
+      const token = localStorage.getItem('djezzy_token');
+      const res = await fetch('http://localhost:4000/api/knowledge', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('Failed to create knowledge article');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['knowledge'] });
+    }
   });
 };

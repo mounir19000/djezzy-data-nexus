@@ -1,4 +1,3 @@
-import React from 'react';
 import { Search } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { NotificationTray } from '../ui/NotificationTray';
