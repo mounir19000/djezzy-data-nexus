@@ -12,6 +12,7 @@ import KnowledgeCenter from './pages/operations/KnowledgeCenter';
 import Reports from './pages/operations/Reports';
 import SettingsPage from './pages/settings/SettingsPage';
 import LoginPage from './pages/auth/LoginPage';
+import NotFoundPage from './pages/NotFoundPage';
 import { ProtectedRoute, RoleBoundary } from './components/layout/ProtectedRoute';
 import { useAppStore } from './store/useAppStore';
 
@@ -49,8 +50,9 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/login/*" element={<Navigate to="/login" replace />} />
         
-        <Route path="/" element={
+        <Route element={
           <ProtectedRoute>
             <MainLayout />
           </ProtectedRoute>
@@ -83,7 +85,7 @@ function App() {
           <Route path="knowledge" element={<KnowledgeCenter />} />
           <Route path="reports" element={<Reports />} />
           <Route path="settings" element={<LegacySettingsRoute />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
