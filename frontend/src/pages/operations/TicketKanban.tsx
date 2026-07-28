@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
-import { AlertCircle, CheckCircle, Clock, FileCheck, Plus, User, X } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, FileCheck, Plus, User, X, Search, Filter } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
 import { useCreateTicket, useSubmitTicketReport, useTickets, useUpdateTicketStatus } from '../../hooks/useTickets';
 import { useSites } from '../../hooks/useSites';
@@ -230,8 +230,34 @@ const TicketKanban = () => {
     dueDate: ''
   });
 
+  const [searchTerm, setSearchTerm] = useState('');
+  const [siteFilter, setSiteFilter] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('');
+
+  const filteredTickets = useMemo(() => {
+    let result = tickets || [];
+    if (searchTerm) {
+      const lower = searchTerm.toLowerCase();
+      result = result.filter((t: any) => 
+        t.id.toLowerCase().includes(lower) || 
+        t.title.toLowerCase().includes(lower) ||
+        t.equipment?.name?.toLowerCase().includes(lower) ||
+        (t.assignee && `${t.assignee.firstName} ${t.assignee.lastName}`.toLowerCase().includes(lower))
+      );
+    }
+    if (siteFilter) {
+      result = result.filter((t: any) => 
+        t.equipment?.room?.site?.id === siteFilter || t.equipment?.room?.siteId === siteFilter
+      );
+    }
+    if (priorityFilter) {
+      result = result.filter((t: any) => t.priority === priorityFilter);
+    }
+    return result;
+  }, [tickets, searchTerm, siteFilter, priorityFilter]);
+
   const scopedSites = useMemo(() => siteId ? sites?.filter((site: any) => site.id === siteId) : sites, [sites, siteId]);
-  const canCreateTicket = ['Super Admin', 'Site Operator', 'Engineer'].includes(user?.role || '');
+  const canCreateTicket = ['Super Admin', 'Site Operator'].includes(user?.role || '');
   const canAssign = ['Super Admin', 'Site Operator', 'Engineer'].includes(user?.role || '');
 
   const equipmentOptions = useMemo(() => {
@@ -251,11 +277,11 @@ const TicketKanban = () => {
 
   const groupedTickets = useMemo(() => {
     const grouped: Record<string, any[]> = { pending: [], assigned: [], inProgress: [], resolved: [], closed: [] };
-    tickets?.forEach((ticket: any) => {
+    filteredTickets.forEach((ticket: any) => {
       if (grouped[ticket.status]) grouped[ticket.status].push(ticket);
     });
     return grouped;
-  }, [tickets]);
+  }, [filteredTickets]);
 
   const canReportTicket = (ticket: any) => {
     if (ticket.status === 'pending' || ticket.status === 'closed') return false;
@@ -418,16 +444,50 @@ const TicketKanban = () => {
 
   return (
     <div className="h-full flex flex-col space-y-6 relative">
-      {canCreateTicket && (
-        <div className="flex justify-end">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row gap-3 flex-1">
+          <div className="relative w-full sm:max-w-xs">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
+            <input
+              type="text"
+              placeholder="Search tickets..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-background border border-border-subtle rounded-md py-2 pl-9 pr-3 text-sm text-on-surface focus:outline-none focus:border-brand-primary transition-colors"
+            />
+          </div>
+          {user?.role === 'Super Admin' && (
+            <select
+              value={siteFilter}
+              onChange={(e) => setSiteFilter(e.target.value)}
+              className="bg-background border border-border-subtle rounded-md px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-brand-primary min-w-[150px]"
+            >
+              <option value="">All Sites</option>
+              {sites?.map((s: any) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          )}
+          <select
+            value={priorityFilter}
+            onChange={(e) => setPriorityFilter(e.target.value)}
+            className="bg-background border border-border-subtle rounded-md px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-brand-primary min-w-[130px]"
+          >
+            <option value="">All Priorities</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+        {canCreateTicket && (
           <button
             onClick={openCreateModal}
-            className="inline-flex items-center justify-center gap-2 bg-primary text-on-primary px-4 py-2 rounded-md font-sans font-medium hover:bg-primary-fixed-dim transition-colors"
+            className="inline-flex items-center justify-center gap-2 bg-primary text-on-primary px-4 py-2 rounded-md font-sans font-medium hover:bg-primary-fixed-dim transition-colors shrink-0"
           >
             <Plus className="w-4 h-4" /> New Ticket
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {boardError && (
         <div className="bg-status-warning/10 border border-status-warning/30 text-status-warning rounded-md px-4 py-3 text-sm">

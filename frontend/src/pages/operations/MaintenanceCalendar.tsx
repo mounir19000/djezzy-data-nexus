@@ -4,12 +4,15 @@ import { Calendar as CalendarIcon, Clock, AlertTriangle, X } from 'lucide-react'
 import { useCreateMaintenanceTask, useMaintenanceTasks } from '../../hooks/useMaintenance';
 import { useSites } from '../../hooks/useSites';
 import { useUsers } from '../../hooks/useUsers';
+import { useAppStore } from '../../store/useAppStore';
 
 const MaintenanceCalendar = () => {
   const { data: tasks, isLoading } = useMaintenanceTasks();
   const { data: sites } = useSites();
   const { data: users } = useUsers();
   const { mutate: createMaintenanceTask, isPending: isCreating } = useCreateMaintenanceTask();
+  const user = useAppStore((state: any) => state.user);
+  const canSchedule = ['Super Admin', 'Site Operator'].includes(user?.role || '');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -53,12 +56,14 @@ const MaintenanceCalendar = () => {
   return (
     <div className="h-full flex flex-col space-y-6 relative">
       <div className="flex justify-end">
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="bg-primary text-on-primary px-4 py-2 rounded-md font-sans font-medium hover:bg-primary-fixed-dim transition-colors flex items-center gap-2"
-        >
-          <CalendarIcon className="w-4 h-4" /> Schedule Maintenance
-        </button>
+        {canSchedule && (
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="bg-primary text-on-primary px-4 py-2 rounded-md font-sans font-medium hover:bg-primary-fixed-dim transition-colors flex items-center gap-2"
+          >
+            <CalendarIcon className="w-4 h-4" /> Schedule Maintenance
+          </button>
+        )}
       </div>
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6">

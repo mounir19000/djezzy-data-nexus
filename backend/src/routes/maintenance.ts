@@ -24,7 +24,7 @@ router.get('/', requireAuth, async (req, res: Response) => {
   }
 });
 
-router.post('/', requireAuth, requireRole(['Engineer']), async (req: any, res: Response) => {
+router.post('/', requireAuth, requireRole(['Site Operator']), async (req: any, res: Response) => {
   const { title, equipmentId, status, assignedTo, scheduledDate } = req.body;
 
   if (!title || !equipmentId || !scheduledDate) {

@@ -39,6 +39,14 @@ const Sidebar = () => {
               <Activity className="w-5 h-5" />
               <span>Analytics</span>
             </NavLink>
+            <NavLink to="/tickets" className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
+              <FileText className="w-5 h-5" />
+              <span>All Tickets</span>
+            </NavLink>
+            <NavLink to="/reports" className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
+              <FileText className="w-5 h-5" />
+              <span>All Reports</span>
+            </NavLink>
           </>
         )}
 
@@ -81,12 +89,6 @@ const Sidebar = () => {
           <ShieldAlert className="w-5 h-5" />
           <span>Incident Center</span>
         </NavLink>
-        {isSuperAdmin && (
-          <NavLink to="/tickets" className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
-            <FileText className="w-5 h-5" />
-            <span>All Tickets</span>
-          </NavLink>
-        )}
         {canManageMaintenance && (
           <NavLink to="/maintenance" className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
             <Calendar className="w-5 h-5" />
@@ -97,12 +99,6 @@ const Sidebar = () => {
           <FileText className="w-5 h-5" />
           <span>Knowledge Center</span>
         </NavLink>
-        {isSuperAdmin && (
-          <NavLink to="/reports" className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
-            <FileText className="w-5 h-5" />
-            <span>All Reports</span>
-          </NavLink>
-        )}
       </nav>
       
       <div className="p-4 border-t border-border-subtle flex flex-col gap-1 shrink-0">

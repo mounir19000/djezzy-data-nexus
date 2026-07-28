@@ -57,7 +57,7 @@ router.get('/', requireAuth, async (req: any, res: Response) => {
 });
 
 // Create a manual ticket or manually escalate an alarm. Alarm-created tickets are automatic in the simulator.
-router.post('/', requireAuth, requireRole(['Site Operator', 'Engineer']), async (req: any, res: Response) => {
+router.post('/', requireAuth, requireRole(['Site Operator']), async (req: any, res: Response) => {
   const authReq = req as AuthRequest;
   const { alarmId, equipmentId, title, priority, assignedTo, dueDate } = req.body;
 
@@ -172,6 +172,12 @@ router.put('/:id/status', requireAuth, async (req: any, res: Response) => {
       : ticket.assignedTo;
 
     const finalAssigneeId = status === 'pending' ? null : nextAssigneeId;
+
+    if (authReq.user?.roleName === 'Engineer') {
+      if (finalAssigneeId && finalAssigneeId !== authReq.user.id) {
+        return res.status(403).json({ error: 'Engineers can only assign tickets to themselves' });
+      }
+    }
 
     if (finalAssigneeId) {
       const assigneeValidation = await validateEngineerAssignee(String(finalAssigneeId), siteId);
