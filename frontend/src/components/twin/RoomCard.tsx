@@ -1,12 +1,11 @@
 import React from 'react';
 import Badge from '../ui/Badge';
-import { Thermometer, Droplets, AlertCircle, Ticket } from 'lucide-react';
+import { Thermometer, AlertCircle, Ticket } from 'lucide-react';
 
 interface RoomCardProps {
   name: string;
   status: 'healthy' | 'warning' | 'critical' | 'offline';
   temp: number;
-  humidity: number;
   healthScore?: number;
   tickets: number;
   alarms: number;
@@ -14,7 +13,7 @@ interface RoomCardProps {
   className?: string;
 }
 
-const RoomCard: React.FC<RoomCardProps> = ({ name, status, temp, humidity, healthScore, tickets, alarms, equipmentCount = 0, className = '' }) => {
+const RoomCard: React.FC<RoomCardProps> = ({ name, status, temp, healthScore, tickets, alarms, equipmentCount = 0, className = '' }) => {
   const bgColors = {
     healthy: 'bg-bg-surface hover:border-status-healthy',
     warning: 'bg-status-warning/10 hover:border-status-warning',
@@ -34,14 +33,10 @@ const RoomCard: React.FC<RoomCardProps> = ({ name, status, temp, humidity, healt
         <Badge status={status}>{status.toUpperCase()}</Badge>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mt-auto">
+      <div className="flex items-center mt-auto">
         <div className="flex items-center gap-2">
           <Thermometer className="w-4 h-4 text-on-surface-variant" />
           <span className="text-sm font-mono text-on-surface">{temp}°C</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Droplets className="w-4 h-4 text-on-surface-variant" />
-          <span className="text-sm font-mono text-on-surface">{humidity}%</span>
         </div>
       </div>
 
