@@ -126,6 +126,18 @@ export const validateTicketStatusChange = (
     return 'Engineer response report is required before resolving or closing';
   }
 
+  if (ticket.assignedTo && ticket.status !== nextStatus) {
+    if (nextStatus === 'pending') {
+      if (user?.roleName !== 'Super Admin') {
+        return 'Only a Super Admin can send an assigned ticket back to pending';
+      }
+    } else {
+      if (user?.id !== ticket.assignedTo) {
+        return 'Only the assigned engineer can move this ticket';
+      }
+    }
+  }
+
   if (user?.roleName === 'Engineer' && nextAssigneeId && nextAssigneeId !== user.id) {
     return 'Engineers can only progress tickets assigned to themselves';
   }

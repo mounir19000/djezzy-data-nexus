@@ -67,6 +67,7 @@ const TicketCard = ({
   ticket,
   canReport,
   canAssign,
+  canDrag,
   onReport,
   onAssign,
   onDragStart
@@ -74,14 +75,15 @@ const TicketCard = ({
   ticket: any;
   canReport: boolean;
   canAssign: boolean;
+  canDrag: boolean;
   onReport: () => void;
   onAssign: () => void;
   onDragStart: (event: any, id: string) => void;
 }) => (
   <div
-    draggable
+    draggable={canDrag}
     onDragStart={(event) => onDragStart(event, ticket.id)}
-    className="bg-background border border-border-subtle rounded-md p-3 hover:border-primary cursor-grab transition-colors"
+    className={`bg-background border border-border-subtle rounded-md p-3 transition-colors ${canDrag ? 'hover:border-primary cursor-grab' : 'cursor-not-allowed opacity-90'}`}
   >
     <div className="flex justify-between items-start gap-3 mb-2">
       <div className="min-w-0">
@@ -156,7 +158,8 @@ const KanbanColumn = ({
   onReport,
   onAssign,
   canReportTicket,
-  canAssignTicket
+  canAssignTicket,
+  canDragTicket
 }: {
   title: string;
   status: string;
@@ -166,6 +169,7 @@ const KanbanColumn = ({
   onAssign: (ticket: any, targetStatus?: string) => void;
   canReportTicket: (ticket: any) => boolean;
   canAssignTicket: (ticket: any) => boolean;
+  canDragTicket: (ticket: any) => boolean;
 }) => (
   <div
     className="flex flex-col bg-bg-surface border border-border-subtle rounded-lg overflow-hidden h-full"
@@ -187,6 +191,7 @@ const KanbanColumn = ({
           ticket={ticket}
           canReport={canReportTicket(ticket)}
           canAssign={canAssignTicket(ticket)}
+          canDrag={canDragTicket(ticket)}
           onReport={() => onReport(ticket)}
           onAssign={() => onAssign(ticket)}
           onDragStart={(event, id) => event.dataTransfer.setData('ticketId', id)}
@@ -212,6 +217,7 @@ const TicketKanban = () => {
   const [boardError, setBoardError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [assignmentIntent, setAssignmentIntent] = useState<{ ticket: any; targetStatus: string } | null>(null);
+  const [reportIntent, setReportIntent] = useState<{ ticket: any; targetStatus: string } | null>(null);
   const [selectedAssignee, setSelectedAssignee] = useState('');
   const [reportTicket, setReportTicket] = useState<any | null>(null);
   const [reportError, setReportError] = useState<string | null>(null);
@@ -264,6 +270,16 @@ const TicketKanban = () => {
     return true;
   };
 
+  const canDragTicket = (ticket: any) => {
+    if (ticket.status === 'closed') return false;
+    if (!ticket.assignedTo) {
+      return canAssign;
+    }
+    if (user?.role === 'Super Admin') return true;
+    if (user?.role === 'Engineer' && ticket.assignedTo === user?.id) return true;
+    return false;
+  };
+
   const openCreateModal = () => {
     setFormError(null);
     setForm({
@@ -282,9 +298,10 @@ const TicketKanban = () => {
     setSelectedAssignee(ticket.assignedTo || (user?.role === 'Engineer' ? user.id : ''));
   };
 
-  const openReportModal = (ticket: any) => {
+  const openReportModal = (ticket: any, targetStatus?: string) => {
     setReportError(null);
     setReportTicket(ticket);
+    setReportIntent(targetStatus ? { ticket, targetStatus } : null);
     setReportForm(ticket.report ? {
       isFailure: ticket.report.isFailure ? 'yes' : 'no',
       failureDomain: ticket.report.failureDomain,
@@ -301,14 +318,38 @@ const TicketKanban = () => {
     const ticket = tickets?.find((item: any) => item.id === ticketId);
     if (!ticket || ticket.status === status) return;
 
+    if (ticket.assignedTo) {
+      if (status === 'pending') {
+        if (user?.role !== 'Super Admin') {
+          setBoardError('Only a Super Admin can send an assigned ticket back to Pending.');
+          return;
+        }
+      } else {
+        if (user?.id !== ticket.assignedTo) {
+          setBoardError('Only the assigned engineer can move this ticket.');
+          return;
+        }
+      }
+    }
+
     if (['resolved', 'closed'].includes(status) && !ticket.report) {
       setBoardError('Submit the engineer response report before resolving or closing this ticket.');
-      if (canReportTicket(ticket)) openReportModal(ticket);
+      if (canReportTicket(ticket)) openReportModal(ticket, status);
       return;
     }
 
     if (status !== 'pending' && !ticket.assignedTo) {
-      openAssignmentModal(ticket, status);
+      if (user?.role === 'Engineer') {
+        updateStatus({
+          id: ticketId,
+          status,
+          assignedTo: user.id
+        }, {
+          onError: (error) => setBoardError(error.message)
+        });
+      } else {
+        openAssignmentModal(ticket, status);
+      }
       return;
     }
 
@@ -363,7 +404,13 @@ const TicketKanban = () => {
         notes: reportForm.notes
       }
     }, {
-      onSuccess: () => setReportTicket(null),
+      onSuccess: () => {
+        setReportTicket(null);
+        if (reportIntent) {
+          updateStatus({ id: reportIntent.ticket.id, status: reportIntent.targetStatus });
+          setReportIntent(null);
+        }
+      },
       onError: (error) => setReportError(error.message)
     });
   };
@@ -405,6 +452,7 @@ const TicketKanban = () => {
             onAssign={openAssignmentModal}
             canReportTicket={canReportTicket}
             canAssignTicket={canAssignTicket}
+            canDragTicket={canDragTicket}
           />
         ))}
       </div>
@@ -534,7 +582,7 @@ const TicketKanban = () => {
           <div className="bg-bg-surface border border-border-subtle rounded-lg w-full max-w-2xl shadow-xl flex flex-col max-h-[92vh]">
             <div className="flex justify-between items-center p-4 border-b border-border-subtle">
               <h3 className="text-lg font-sans font-medium text-on-surface">Engineer Response</h3>
-              <button onClick={() => setReportTicket(null)} className="text-on-surface-variant hover:text-on-surface">
+              <button onClick={() => { setReportTicket(null); setReportIntent(null); }} className="text-on-surface-variant hover:text-on-surface">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -610,7 +658,7 @@ const TicketKanban = () => {
               </div>
               {reportError && <div className="text-sm text-status-warning">{reportError}</div>}
               <div className="flex justify-end gap-3 pt-4 border-t border-border-subtle">
-                <button type="button" onClick={() => setReportTicket(null)} className="px-4 py-2 rounded-md font-medium text-on-surface hover:bg-bg-secondary transition-colors">Cancel</button>
+                <button type="button" onClick={() => { setReportTicket(null); setReportIntent(null); }} className="px-4 py-2 rounded-md font-medium text-on-surface hover:bg-bg-secondary transition-colors">Cancel</button>
                 <button disabled={isSubmittingReport} type="submit" className="bg-primary text-on-primary px-4 py-2 rounded-md font-medium hover:bg-primary-fixed-dim transition-colors disabled:opacity-50">
                   {isSubmittingReport ? 'Submitting...' : 'Submit Response'}
                 </button>

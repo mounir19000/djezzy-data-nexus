@@ -171,14 +171,16 @@ router.put('/:id/status', requireAuth, async (req: any, res: Response) => {
       ? (assignedTo || null)
       : ticket.assignedTo;
 
-    if (nextAssigneeId) {
-      const assigneeValidation = await validateEngineerAssignee(String(nextAssigneeId), siteId);
+    const finalAssigneeId = status === 'pending' ? null : nextAssigneeId;
+
+    if (finalAssigneeId) {
+      const assigneeValidation = await validateEngineerAssignee(String(finalAssigneeId), siteId);
       if (!assigneeValidation.valid) {
         return res.status(400).json({ error: assigneeValidation.message });
       }
     }
 
-    const transitionError = validateTicketStatusChange(ticket, String(status), nextAssigneeId, authReq.user);
+    const transitionError = validateTicketStatusChange(ticket, String(status), finalAssigneeId, authReq.user);
     if (transitionError) {
       return res.status(400).json({ error: transitionError });
     }
@@ -187,10 +189,22 @@ router.put('/:id/status', requireAuth, async (req: any, res: Response) => {
       where: { id: req.params.id },
       data: {
         status: String(status),
-        assignedTo: nextAssigneeId || null
+        assignedTo: finalAssigneeId
       },
       include: ticketInclude
     });
+
+    if (finalAssigneeId && finalAssigneeId !== ticket.assignedTo) {
+      await prisma.notification.create({
+        data: {
+          userId: finalAssigneeId,
+          siteId: siteIdForTicket(updatedTicket),
+          message: `Ticket ${updatedTicket.id.substring(0, 8)} assigned: ${updatedTicket.title}`
+        }
+      });
+      const io = req.app.get('io');
+      if (io) io.emit('notification_update');
+    }
 
     if (terminalStatuses.includes(String(status)) && updatedTicket.alarmId) {
       await prisma.alarm.update({
@@ -201,6 +215,25 @@ router.put('/:id/status', requireAuth, async (req: any, res: Response) => {
 
     if (status === 'closed') {
       await createIncidentKnowledgeArticle(updatedTicket.id);
+      
+      const superAdmins = await prisma.user.findMany({
+        where: { role: { name: 'Super Admin' } }
+      });
+      
+      for (const admin of superAdmins) {
+        await prisma.notification.create({
+          data: {
+            userId: admin.id,
+            siteId: siteIdForTicket(updatedTicket),
+            message: `Ticket ${updatedTicket.id.substring(0, 8)} (${updatedTicket.title}) has been closed.`
+          }
+        });
+      }
+      
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('notification_update');
+      }
     }
 
     res.json(mapTicketWithDiagnosis(updatedTicket));
