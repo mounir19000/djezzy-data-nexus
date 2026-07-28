@@ -59,6 +59,22 @@ const latestMetric = (metrics: LatestMetricMap, equipmentId: string, metricType:
   return typeof value === 'number' ? value : undefined;
 };
 
+const latestMetricFromAliases = (metrics: LatestMetricMap, equipmentId: string, metricTypes: string[]) => {
+  for (const metricType of metricTypes) {
+    const value = latestMetric(metrics, equipmentId, metricType);
+    if (typeof value === 'number') return value;
+  }
+
+  return undefined;
+};
+
+type Phase = 'L1' | 'L2' | 'L3';
+
+const phases: Phase[] = ['L1', 'L2', 'L3'];
+
+const inputVoltageMetricTypes = (phase: Phase) => [`inputVoltage${phase}`, `DS3_Input_Voltage_${phase}`];
+const outputLoadMetricTypes = (phase: Phase) => [`outputLoad${phase}`, `DS3_Output_Load_${phase}`];
+
 const roomTemperature = (room: RoomLike, metrics: LatestMetricMap) => {
   const temperatures = (room.equipments || [])
     .map((equipment) => latestMetric(metrics, equipment.id, 'temperature'))
@@ -97,6 +113,12 @@ const alarmCausesForEquipment = (equipment: EquipmentLike[]) => equipment.flatMa
 
 const mainCause = (causes: string[]) => causes[0] || 'No active causes detected.';
 
+const scorePhaseBalance = (unbalance: number) => {
+  if (unbalance < 10) return 100;
+  if (unbalance <= 25) return 70;
+  return 30;
+};
+
 const roomCauses = (room: RoomLike, temperature: number, score: number) => {
   const equipment = room.equipments || [];
   const causes = alarmCausesForEquipment(equipment);
@@ -120,7 +142,9 @@ const upsCauses = (
   gridAlarms: AlarmLike[],
   load?: number,
   temperature?: number,
-  batteryCapacity?: number
+  batteryCapacity?: number,
+  phaseUnbalance?: number,
+  gridFailure = false
 ) => {
   const causes = alarmCausesForEquipment([upsEquipment]);
 
@@ -132,9 +156,15 @@ const upsCauses = (
     causes.push('UPS load is elevated');
   }
 
-  if (typeof batteryCapacity === 'number' && batteryCapacity < 20) {
+  if (typeof phaseUnbalance === 'number' && phaseUnbalance > 25) {
+    causes.push(`UPS output phases are severely unbalanced (${round(phaseUnbalance)}%).`);
+  } else if (typeof phaseUnbalance === 'number' && phaseUnbalance >= 10) {
+    causes.push(`UPS output phases are unbalanced (${round(phaseUnbalance)}%).`);
+  }
+
+  if (gridFailure && typeof batteryCapacity === 'number' && batteryCapacity < 20) {
     causes.push('Battery reserve is almost depleted');
-  } else if (typeof batteryCapacity === 'number' && batteryCapacity < 95) {
+  } else if (!gridFailure && typeof batteryCapacity === 'number' && batteryCapacity < 95) {
     causes.push('Battery reserve needs attention');
   }
 
@@ -149,9 +179,15 @@ export const calculateSiteHealth = (site: SiteLike, metrics: LatestMetricMap) =>
   const rooms = site.rooms || [];
   const allEquipment = rooms.flatMap((room) => room.equipments || []);
   const allAlarms = allEquipment.flatMap((equipment) => equipment.alarms || []);
-  const gridVoltages = ['inputVoltageL1', 'inputVoltageL2', 'inputVoltageL3']
-    .map((metricType) => allEquipment.map((equipment) => latestMetric(metrics, equipment.id, metricType)).find((value) => typeof value === 'number'));
-  const batteryCapacity = allEquipment.map((equipment) => latestMetric(metrics, equipment.id, 'batteryCapacity')).find((value) => typeof value === 'number');
+  const gridVoltages = phases
+    .map((phase) => allEquipment
+      .map((equipment) => latestMetricFromAliases(metrics, equipment.id, inputVoltageMetricTypes(phase)))
+      .find((value) => typeof value === 'number'));
+  const hasCompleteGridVoltages = gridVoltages.every((value) => typeof value === 'number');
+  const gridFailure = hasCompleteGridVoltages && gridVoltages.every((value) => value === 0);
+  const batteryCapacity = allEquipment
+    .map((equipment) => latestMetricFromAliases(metrics, equipment.id, ['batteryCapacity', 'DS3_Battery_Capacity']))
+    .find((value) => typeof value === 'number');
   const roomScores = rooms.map((room) => {
     const temperature = roomTemperature(room, metrics);
     const score = scoreTemperature(temperature, room.targetTemp);
@@ -172,26 +208,53 @@ export const calculateSiteHealth = (site: SiteLike, metrics: LatestMetricMap) =>
   });
 
   const upsEquipment = allEquipment.find((equipment) => equipment.type.toLowerCase() === 'ups');
-  const upsLoad = upsEquipment ? latestMetric(metrics, upsEquipment.id, 'load') ?? 50 : undefined;
-  const upsTemperature = upsEquipment ? latestMetric(metrics, upsEquipment.id, 'temperature') ?? 25 : undefined;
+  const upsPhaseLoadReadings = upsEquipment
+    ? phases.map((phase) => latestMetricFromAliases(metrics, upsEquipment.id, outputLoadMetricTypes(phase)))
+    : [];
+  const numericUpsPhaseLoads = upsPhaseLoadReadings.filter((value): value is number => typeof value === 'number');
+  const hasCompleteUpsPhaseLoads = numericUpsPhaseLoads.length === phases.length;
+  const phaseUnbalance = hasCompleteUpsPhaseLoads
+    ? Math.max(...numericUpsPhaseLoads) - Math.min(...numericUpsPhaseLoads)
+    : undefined;
+  const upsLoad = hasCompleteUpsPhaseLoads
+    ? Math.max(...numericUpsPhaseLoads)
+    : upsEquipment ? latestMetric(metrics, upsEquipment.id, 'load') ?? 50 : undefined;
+  const upsTemperature = upsEquipment
+    ? latestMetricFromAliases(metrics, upsEquipment.id, ['temperature', 'DS3_UPS_Temp']) ?? 25
+    : undefined;
   const upsAlarms = upsEquipment?.alarms || [];
   const gridAlarms = allAlarms.filter((alarm) => alarm.description.toLowerCase().includes('grid'));
   const siteAlarmPenalty = alarmPenalty([...upsAlarms, ...gridAlarms]);
   const loadScore = typeof upsLoad === 'number' ? scoreLoad(upsLoad) : 100;
-  const phaseBalanceScore = 100;
+  const phaseBalanceScore = typeof phaseUnbalance === 'number' ? scorePhaseBalance(phaseUnbalance) : 100;
   const batteryScore = typeof batteryCapacity === 'number' ? (batteryCapacity >= 95 ? 100 : 0) : 100;
   const internalTempScore = typeof upsTemperature === 'number' ? scoreTemperature(upsTemperature, 30) : 100;
-  const upsBaseScore = (loadScore * 0.35) + (phaseBalanceScore * 0.2) + (batteryScore * 0.3) + (internalTempScore * 0.15);
+  const upsBaseMetrics = [
+    { score: loadScore, weight: 35 },
+    { score: phaseBalanceScore, weight: 20 },
+    ...(gridFailure ? [] : [{ score: batteryScore, weight: 30 }]),
+    { score: internalTempScore, weight: 15 }
+  ];
+  const upsBaseMetricWeight = upsBaseMetrics.reduce((sum, metric) => sum + metric.weight, 0);
+  const upsBaseScore = upsBaseMetricWeight > 0
+    ? upsBaseMetrics.reduce((sum, metric) => sum + metric.score * metric.weight, 0) / upsBaseMetricWeight
+    : 100;
   const upsScore = upsEquipment ? clamp(upsBaseScore - siteAlarmPenalty) : undefined;
-  const upsIssueList = upsEquipment ? upsCauses(upsEquipment, gridAlarms, upsLoad, upsTemperature, batteryCapacity) : [];
+  const upsIssueList = upsEquipment ? upsCauses(upsEquipment, gridAlarms, upsLoad, upsTemperature, batteryCapacity, phaseUnbalance, gridFailure) : [];
   const upsComponent = upsEquipment ? {
     id: upsEquipment.id,
     name: upsEquipment.name,
     type: 'ups',
-    score: round(upsScore || 0),
-    status: statusFromScore(upsScore || 0),
+    score: round(upsScore ?? 0),
+    status: statusFromScore(upsScore ?? 0),
     weight: 40,
     load: typeof upsLoad === 'number' ? round(upsLoad) : null,
+    phaseLoads: hasCompleteUpsPhaseLoads ? Object.fromEntries(phases.map((phase, index) => [phase, round(numericUpsPhaseLoads[index])])) : null,
+    phaseUnbalance: typeof phaseUnbalance === 'number' ? round(phaseUnbalance) : null,
+    loadScore: round(loadScore),
+    phaseBalanceScore: round(phaseBalanceScore),
+    batteryScore: gridFailure ? null : round(batteryScore),
+    internalTempScore: round(internalTempScore),
     temperature: typeof upsTemperature === 'number' ? round(upsTemperature) : null,
     batteryCapacity: typeof batteryCapacity === 'number' ? round(batteryCapacity) : null,
     penalty: siteAlarmPenalty,
@@ -220,7 +283,6 @@ export const calculateSiteHealth = (site: SiteLike, metrics: LatestMetricMap) =>
     ? componentsForScore.reduce((sum, component) => sum + component.score * component.weight, 0) / totalWeight
     : site.overallHealth;
 
-  const gridFailure = gridVoltages.every((value) => value === 0);
   const imminentShutdown = gridFailure && typeof batteryCapacity === 'number' && batteryCapacity < 20;
   const overrides: string[] = [];
   let score = weightedScore;

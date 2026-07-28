@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bell, Check } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Bell, Check, List } from 'lucide-react';
 
 interface Notification {
   id: string;
@@ -25,7 +26,12 @@ export const NotificationTray = () => {
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    window.addEventListener('notification_update', fetchNotifications);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('notification_update', fetchNotifications);
+    };
   }, []);
 
   const fetchNotifications = async () => {
@@ -33,7 +39,7 @@ export const NotificationTray = () => {
       const token = localStorage.getItem('djezzy_token');
       if (!token) return;
 
-      const res = await fetch('http://localhost:4000/api/notifications', {
+      const res = await fetch('http://localhost:4000/api/notifications?limit=6', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -129,6 +135,17 @@ export const NotificationTray = () => {
                 ))}
               </div>
             )}
+          </div>
+
+          <div className="border-t border-border-subtle bg-bg-surface p-3">
+            <Link
+              to="/notifications"
+              onClick={() => setIsOpen(false)}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-md border border-border-subtle bg-background px-3 py-2 text-sm text-on-surface hover:border-primary/50 hover:text-primary transition-colors"
+            >
+              <List className="w-4 h-4" />
+              Open all notifications
+            </Link>
           </div>
         </div>
       )}

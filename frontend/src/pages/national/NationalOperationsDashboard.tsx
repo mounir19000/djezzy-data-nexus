@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import KPICard from '../../components/ui/KPICard';
 import Badge from '../../components/ui/Badge';
-import { Activity, MapPin, AlertTriangle, ShieldCheck, Ticket, Wrench, CheckCircle } from 'lucide-react';
+import { Activity, AlertTriangle, Ticket } from 'lucide-react';
 import { useDashboardMetrics } from '../../hooks/useDashboard';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -39,14 +39,9 @@ const NationalOperationsDashboard = () => {
       {/* KPI Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <KPICard title="Overall Health Score" value={isLoading ? '...' : `${metrics?.overallHealthScore}%`} trend="1.2%" trendUp={true} icon={<Activity className="w-5 h-5" />} />
-        <KPICard title="Total Sites" value={isLoading ? '...' : metrics?.totalSites} icon={<MapPin className="w-5 h-5" />} />
-        <KPICard title="Healthy Sites" value={isLoading ? '...' : metrics?.healthySites} icon={<ShieldCheck className="w-5 h-5 text-status-healthy" />} />
-        <KPICard title="Warning Sites" value={isLoading ? '...' : metrics?.warningSites} icon={<AlertTriangle className="w-5 h-5 text-status-warning" />} />
         <KPICard title="Critical Sites" value={isLoading ? '...' : metrics?.criticalSites} icon={<AlertTriangle className="w-5 h-5 text-status-critical" />} />
         <KPICard title="Active Incidents" value={isLoading ? '...' : metrics?.activeIncidents} icon={<AlertTriangle className="w-5 h-5 text-status-critical" />} />
         <KPICard title="Open Tickets" value={isLoading ? '...' : metrics?.openTickets} icon={<Ticket className="w-5 h-5" />} />
-        <KPICard title="Pending Maintenance" value={isLoading ? '...' : metrics?.pendingMaintenance} icon={<Wrench className="w-5 h-5" />} />
-        <KPICard title="Closed Tickets Today" value={isLoading ? '...' : metrics?.closedTicketsToday} icon={<CheckCircle className="w-5 h-5" />} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

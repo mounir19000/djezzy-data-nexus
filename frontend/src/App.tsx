@@ -10,6 +10,7 @@ import TicketKanban from './pages/operations/TicketKanban';
 import MaintenanceCalendar from './pages/operations/MaintenanceCalendar';
 import KnowledgeCenter from './pages/operations/KnowledgeCenter';
 import Reports from './pages/operations/Reports';
+import NotificationsPage from './pages/operations/NotificationsPage';
 import SettingsPage from './pages/settings/SettingsPage';
 import LoginPage from './pages/auth/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -76,6 +77,7 @@ function App() {
           } />
           <Route path="knowledge" element={<KnowledgeCenter />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="notifications" element={<NotificationsPage />} />
           <Route path="settings" element={<LegacySettingsRoute />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>

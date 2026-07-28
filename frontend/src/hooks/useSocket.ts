@@ -17,6 +17,10 @@ export const useSocket = (url: string = 'http://localhost:4000') => {
       updateTelemetry(data);
     });
 
+    socketRef.current.on('notification_update', () => {
+      window.dispatchEvent(new Event('notification_update'));
+    });
+
     socketRef.current.on('alarm_update', () => {
       window.dispatchEvent(new Event('alarm_update'));
     });

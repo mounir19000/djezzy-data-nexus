@@ -110,6 +110,7 @@ model Alarm {
   active      Boolean   @default(true)
   tickets     Ticket[]
   createdAt   DateTime  @default(now()) @map("created_at")
+  clearedAt   DateTime? @map("cleared_at")
 
   @@map("alarms")
 }
