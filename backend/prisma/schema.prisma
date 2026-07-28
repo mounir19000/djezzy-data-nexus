@@ -36,9 +36,12 @@ model Site {
   id            String   @id @default(uuid())
   name          String
   location      String
-  overallHealth Float    @default(100.0) @map("overall_health")
+  latitude      Float?
+  longitude     Float?
+  overallHealth Float        @default(100.0) @map("overall_health")
   rooms         Room[]
-  createdAt     DateTime @default(now()) @map("created_at")
+  expertRules   ExpertRule[]
+  createdAt     DateTime     @default(now()) @map("created_at")
 
   @@map("sites")
 }
@@ -157,6 +160,8 @@ model ExpertRule {
   parameter   String
   threshold   Float
   unit        String
+  siteId      String?  @map("site_id")
+  site        Site?    @relation(fields: [siteId], references: [id])
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@map("expert_rules")

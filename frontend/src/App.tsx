@@ -9,6 +9,7 @@ import IncidentDiagnosisCenter from './pages/operations/IncidentDiagnosisCenter'
 import TicketKanban from './pages/operations/TicketKanban';
 import MaintenanceCalendar from './pages/operations/MaintenanceCalendar';
 import KnowledgeCenter from './pages/operations/KnowledgeCenter';
+import Reports from './pages/operations/Reports';
 import ExecutiveReportGenerator from './pages/national/ExecutiveReportGenerator';
 import SettingsPage from './pages/settings/SettingsPage';
 import LoginPage from './pages/auth/LoginPage';
@@ -44,9 +45,9 @@ function App() {
           <Route path="tickets" element={<TicketKanban />} />
           <Route path="maintenance" element={<MaintenanceCalendar />} />
           <Route path="knowledge" element={<KnowledgeCenter />} />
-          <Route path="reports" element={<ExecutiveReportGenerator />} />
+          <Route path="reports" element={<Reports />} />
           <Route path="settings" element={
-            <RoleBoundary allowedRoles={['Super Admin']}>
+            <RoleBoundary allowedRoles={['Super Admin', 'Engineer']}>
               <SettingsPage />
             </RoleBoundary>
           } />

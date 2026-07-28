@@ -48,7 +48,6 @@ router.get('/metrics', requireAuth, async (req, res: Response) => {
       openTickets,
       pendingMaintenance,
       closedTicketsToday,
-      aiDiagnosesRun: 8401, // Mock value
       feed: [
         ...recentAlarms.map((a: any) => ({
           id: a.id,

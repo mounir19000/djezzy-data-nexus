@@ -1,18 +1,36 @@
 import React, { useState } from 'react';
-import { Search, Book, HelpCircle, FileText, ChevronRight } from 'lucide-react';
+import { Search, Book, HelpCircle, FileText, ChevronRight, X, Plus } from 'lucide-react';
 import { useKnowledgeBase } from '../../hooks/useKnowledge';
+import { useAppStore } from '../../store/useAppStore';
 
 const KnowledgeCenter = () => {
   const [search, setSearch] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { data: knowledgeBase, isLoading } = useKnowledgeBase();
+  const { user } = useAppStore();
+
+  const canCreate = user?.role === 'Super Admin' || user?.role === 'Engineer';
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsModalOpen(false);
+  };
 
   return (
-    <div className="h-full flex flex-col space-y-6">
+    <div className="h-full flex flex-col space-y-6 relative">
       <header className="flex justify-between items-end">
         <div>
           <h2 className="text-3xl font-display font-bold text-on-surface">Knowledge Center</h2>
           <p className="text-on-surface-variant font-sans mt-1">Engineering documentation and standard operating procedures.</p>
         </div>
+        {canCreate && (
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="bg-primary text-on-primary px-4 py-2 rounded-md font-sans font-medium hover:bg-primary-fixed-dim transition-colors flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" /> Create Article
+          </button>
+        )}
       </header>
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-0">
@@ -75,6 +93,52 @@ const KnowledgeCenter = () => {
           
         </div>
       </div>
+
+      {/* Create Article Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-bg-surface border border-border-subtle rounded-lg w-full max-w-3xl shadow-xl flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-4 border-b border-border-subtle">
+              <h3 className="text-lg font-sans font-medium text-on-surface">Create Knowledge Article</h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-on-surface-variant hover:text-on-surface">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-4 space-y-4 flex-1 overflow-y-auto">
+              <div>
+                <label className="block text-sm font-medium text-on-surface mb-1">Title</label>
+                <input required type="text" className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface focus:outline-none focus:border-primary" placeholder="e.g. UPS Failure Recovery Procedure" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-on-surface mb-1">Category</label>
+                  <select required className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface focus:outline-none focus:border-primary">
+                    <option value="Power Systems">Power Systems</option>
+                    <option value="Cooling & HVAC">Cooling & HVAC</option>
+                    <option value="Network & Telemetry">Network & Telemetry</option>
+                    <option value="General SOP">General SOP</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-on-surface mb-1">Tags (comma separated)</label>
+                  <input type="text" className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface focus:outline-none focus:border-primary" placeholder="ups, emergency, power" />
+                </div>
+              </div>
+              <div className="flex-1 flex flex-col min-h-[300px]">
+                <label className="block text-sm font-medium text-on-surface mb-1 flex justify-between">
+                  <span>Content (Markdown format)</span>
+                  <span className="text-xs text-on-surface-variant">Use # for headings, * for lists</span>
+                </label>
+                <textarea required className="flex-1 w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface font-mono text-sm focus:outline-none focus:border-primary" placeholder="# Context\nDescribe the context...\n\n## Resolution\nSteps to resolve..."></textarea>
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-border-subtle mt-4">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-md font-medium text-on-surface hover:bg-bg-secondary transition-colors">Cancel</button>
+                <button type="submit" className="bg-primary text-on-primary px-4 py-2 rounded-md font-medium hover:bg-primary-fixed-dim transition-colors">Save Article</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

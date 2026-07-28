@@ -56,11 +56,35 @@ async function main() {
   });
 
   // Site
-  const blidaSite = await prisma.site.create({
-    data: {
+  const blidaSite = await prisma.site.upsert({
+    where: { id: 'msc10-blida' },
+    update: {
+      latitude: 36.4700,
+      longitude: 2.8277,
+    },
+    create: {
+      id: 'msc10-blida',
       name: 'MSC10 Blida',
       location: 'Blida, Algeria',
+      latitude: 36.4700,
+      longitude: 2.8277,
       overallHealth: 92.5
+    }
+  });
+
+  const algiersSite = await prisma.site.upsert({
+    where: { id: 'msc01-algiers' },
+    update: {
+      latitude: 36.7538,
+      longitude: 3.0588,
+    },
+    create: {
+      id: 'msc01-algiers',
+      name: 'MSC01 Algiers',
+      location: 'Algiers, Algeria',
+      latitude: 36.7538,
+      longitude: 3.0588,
+      overallHealth: 98.0
     }
   });
 
