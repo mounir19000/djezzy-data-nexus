@@ -230,7 +230,6 @@ const TicketKanban = () => {
     dueDate: ''
   });
 
-  const currentSite = useMemo(() => sites?.find((site: any) => site.id === siteId), [sites, siteId]);
   const scopedSites = useMemo(() => siteId ? sites?.filter((site: any) => site.id === siteId) : sites, [sites, siteId]);
   const canCreateTicket = ['Super Admin', 'Site Operator', 'Engineer'].includes(user?.role || '');
   const canAssign = ['Super Admin', 'Site Operator', 'Engineer'].includes(user?.role || '');
@@ -419,20 +418,16 @@ const TicketKanban = () => {
 
   return (
     <div className="h-full flex flex-col space-y-6 relative">
-      <header className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-end">
-        <div>
-          <h2 className="text-3xl font-display font-bold text-on-surface">{siteId ? `${currentSite?.name || 'Site'} Tickets` : 'All Site Tickets'}</h2>
-          <p className="text-on-surface-variant font-sans mt-1">Alarm-created and manually launched intervention tickets.</p>
-        </div>
-        {canCreateTicket && (
+      {canCreateTicket && (
+        <div className="flex justify-end">
           <button
             onClick={openCreateModal}
             className="inline-flex items-center justify-center gap-2 bg-primary text-on-primary px-4 py-2 rounded-md font-sans font-medium hover:bg-primary-fixed-dim transition-colors"
           >
             <Plus className="w-4 h-4" /> New Ticket
           </button>
-        )}
-      </header>
+        </div>
+      )}
 
       {boardError && (
         <div className="bg-status-warning/10 border border-status-warning/30 text-status-warning rounded-md px-4 py-3 text-sm">

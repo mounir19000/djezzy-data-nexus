@@ -28,14 +28,6 @@ const NationalOperationsDashboard = () => {
 
   return (
     <div className="space-y-6">
-      <header className="flex justify-between items-end">
-        <div>
-          <h2 className="text-3xl font-display font-bold text-on-surface">National Operations</h2>
-          <p className="text-on-surface-variant font-sans mt-1">Real-time overview of all Djezzy infrastructure.</p>
-        </div>
-        <Badge status="healthy">Live Data Feed Active</Badge>
-      </header>
-
       {/* KPI Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <KPICard title="Overall Health Score" value={isLoading ? '...' : `${metrics?.overallHealthScore}%`} trend="1.2%" trendUp={true} icon={<Activity className="w-5 h-5" />} />

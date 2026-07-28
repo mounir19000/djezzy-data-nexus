@@ -64,11 +64,6 @@ const IncidentDiagnosisCenter = () => {
 
   return (
     <div className="h-full flex flex-col space-y-6">
-      <header>
-        <h2 className="text-3xl font-display font-bold text-on-surface">Incident Diagnosis Center</h2>
-        <p className="text-on-surface-variant font-sans mt-1">Live alarms, rule-based diagnosis, and ticket escalation.</p>
-      </header>
-
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
         {/* Alarm Feed */}
         <div className="col-span-1 lg:col-span-5 bg-bg-surface border border-border-subtle rounded-lg p-6 flex flex-col h-full overflow-hidden">

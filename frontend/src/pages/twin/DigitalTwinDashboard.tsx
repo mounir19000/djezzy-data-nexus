@@ -106,13 +106,6 @@ const DigitalTwinDashboard = () => {
 
   return (
     <div className="space-y-6 h-full flex flex-col">
-      <header className="flex justify-between items-end">
-        <div>
-          <h2 className="text-3xl font-display font-bold text-on-surface">{siteName} Digital Twin</h2>
-          <p className="text-on-surface-variant font-sans mt-1">Physical room health, live telemetry, tickets, and active alarms.</p>
-        </div>
-      </header>
-
       <div className="flex-1 bg-bg-surface border border-border-subtle rounded-lg p-6 overflow-hidden flex flex-col">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-sans font-medium text-on-surface">Facility Floor Plan</h3>

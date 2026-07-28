@@ -3,11 +3,6 @@ import { FileText, Download, Filter } from 'lucide-react';
 const ExecutiveReportGenerator = () => {
   return (
     <div className="h-full flex flex-col space-y-6 max-w-5xl mx-auto w-full">
-      <header>
-        <h2 className="text-3xl font-display font-bold text-on-surface">Executive Reports</h2>
-        <p className="text-on-surface-variant font-sans mt-1">Generate and export automated operational summaries.</p>
-      </header>
-
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1 min-h-[500px]">
         {/* Report Configuration */}
         <div className="col-span-1 bg-bg-surface border border-border-subtle rounded-lg p-6 flex flex-col">

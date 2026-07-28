@@ -25,15 +25,6 @@ const SettingsPage = () => {
 
   return (
     <div className="h-full flex flex-col space-y-6 max-w-4xl mx-auto w-full">
-      <header>
-        <h2 className="text-3xl font-display font-bold text-on-surface">
-          Platform Settings
-        </h2>
-        <p className="text-on-surface-variant font-sans mt-1">
-          Configure global platform thresholds and expert system logic.
-        </p>
-      </header>
-
       <div className="bg-bg-surface border border-border-subtle rounded-lg overflow-hidden flex flex-col">
         <div className="px-6 py-4 border-b border-border-subtle bg-bg-secondary flex items-center justify-between">
           <h3 className="text-lg font-sans font-medium text-on-surface flex items-center gap-2">

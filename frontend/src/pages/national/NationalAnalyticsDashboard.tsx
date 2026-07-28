@@ -20,11 +20,6 @@ const healthTrendData = [
 const NationalAnalyticsDashboard = () => {
   return (
     <div className="space-y-6">
-      <header>
-        <h2 className="text-3xl font-display font-bold text-on-surface">Executive Analytics</h2>
-        <p className="text-on-surface-variant font-sans mt-1">Network-wide performance and incident trends.</p>
-      </header>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Incident Trends Chart */}
         <div className="bg-bg-surface border border-border-subtle rounded-lg p-6">
