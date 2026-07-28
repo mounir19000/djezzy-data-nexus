@@ -66,7 +66,7 @@ const NationalOperationsDashboard = () => {
                     <Popup>
                       <strong>{site.name}</strong><br />
                       Health: {site.overallHealth}%<br />
-                      <a href={`/sites/${site.id}/digital-twin`}>Open Digital Twin</a>
+                      <a href={`/sites/${site.id}/dashboard`}>Open Site Dashboard</a>
                     </Popup>
                   </Marker>
                 );

@@ -1,10 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import RoomCard from '../../components/twin/RoomCard';
 import Badge from '../../components/ui/Badge';
 import { useTelemetryStore } from '../../store/useTelemetryStore';
 import { useSite } from '../../hooks/useSites';
-import PowerFlowView from './PowerFlowView';
 
 const roomLayout: Record<string, string> = {
   'UPS Room': 'col-span-2 row-span-1',
@@ -36,7 +35,6 @@ const statusFromHealth = (healthScore: number, activeAlarms: number): 'healthy' 
 };
 
 const DigitalTwinDashboard = () => {
-  const [activeTab, setActiveTab] = useState<'physical' | 'power'>('physical');
   const params = useParams();
   const [searchParams] = useSearchParams();
   const siteId = params.siteId || searchParams.get('siteId') || 'msc10-blida';
@@ -104,7 +102,7 @@ const DigitalTwinDashboard = () => {
       <div className="h-full min-h-[560px] bg-bg-surface border border-border-subtle rounded-lg p-6 flex items-center justify-center">
         <div className="text-center max-w-md">
           <h2 className="text-xl font-display font-bold text-on-surface">{siteName} Digital Twin</h2>
-          <p className="text-on-surface-variant mt-2">No rooms or equipment have been configured for this site yet. Add the site model in Site Settings to activate the Digital Twin.</p>
+          <p className="text-on-surface-variant mt-2">Coming soon. This site does not have its Digital Twin model loaded yet.</p>
         </div>
       </div>
     );
@@ -115,59 +113,39 @@ const DigitalTwinDashboard = () => {
       <header className="flex justify-between items-end">
         <div>
           <h2 className="text-3xl font-display font-bold text-on-surface">{siteName} Digital Twin</h2>
-          <p className="text-on-surface-variant font-sans mt-1">Physical room health, live telemetry, tickets, and power topology.</p>
-        </div>
-        <div className="flex bg-bg-surface border border-border-subtle rounded-lg p-1">
-          <button 
-            onClick={() => setActiveTab('physical')}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'physical' ? 'bg-primary text-on-primary' : 'text-on-surface hover:bg-background'}`}
-          >
-            Physical View
-          </button>
-          <button 
-            onClick={() => setActiveTab('power')}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'power' ? 'bg-primary text-on-primary' : 'text-on-surface hover:bg-background'}`}
-          >
-            Power Flow View
-          </button>
+          <p className="text-on-surface-variant font-sans mt-1">Physical room health, live telemetry, tickets, and active alarms.</p>
         </div>
       </header>
 
-      {activeTab === 'physical' ? (
-        <div className="flex-1 bg-bg-surface border border-border-subtle rounded-lg p-6 overflow-hidden flex flex-col">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-sans font-medium text-on-surface">Facility Floor Plan</h3>
-            {criticalRooms > 0 ? (
-              <Badge status="critical">{criticalRooms} Critical Room{criticalRooms > 1 ? 's' : ''}</Badge>
-            ) : warningRooms > 0 ? (
-              <Badge status="warning">{warningRooms} Room{warningRooms > 1 ? 's' : ''} Require Attention</Badge>
-            ) : (
-              <Badge status="healthy">Rooms Healthy</Badge>
-            )}
-          </div>
-          
-          <div className="flex-1 grid grid-cols-4 grid-rows-3 gap-4 min-h-[500px]">
-            {roomSummaries.map((room: any) => (
-              <RoomCard
-                key={room.id}
-                name={room.name}
-                status={room.status}
-                temp={Number(room.temperature.toFixed(1))}
-                humidity={Number(room.humidity.toFixed(1))}
-                healthScore={room.healthScore}
-                tickets={room.openTickets}
-                alarms={room.activeAlarms}
-                equipmentCount={room.equipmentCount}
-                className={roomLayout[room.name] || 'col-span-1 row-span-1'}
-              />
-            ))}
-          </div>
+      <div className="flex-1 bg-bg-surface border border-border-subtle rounded-lg p-6 overflow-hidden flex flex-col">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-sans font-medium text-on-surface">Facility Floor Plan</h3>
+          {criticalRooms > 0 ? (
+            <Badge status="critical">{criticalRooms} Critical Room{criticalRooms > 1 ? 's' : ''}</Badge>
+          ) : warningRooms > 0 ? (
+            <Badge status="warning">{warningRooms} Room{warningRooms > 1 ? 's' : ''} Require Attention</Badge>
+          ) : (
+            <Badge status="healthy">Rooms Healthy</Badge>
+          )}
         </div>
-      ) : (
-        <div className="flex-1 min-h-[560px]">
-          <PowerFlowView />
+
+        <div className="flex-1 grid grid-cols-4 grid-rows-3 gap-4 min-h-[500px]">
+          {roomSummaries.map((room: any) => (
+            <RoomCard
+              key={room.id}
+              name={room.name}
+              status={room.status}
+              temp={Number(room.temperature.toFixed(1))}
+              humidity={Number(room.humidity.toFixed(1))}
+              healthScore={room.healthScore}
+              tickets={room.openTickets}
+              alarms={room.activeAlarms}
+              equipmentCount={room.equipmentCount}
+              className={roomLayout[room.name] || 'col-span-1 row-span-1'}
+            />
+          ))}
         </div>
-      )}
+      </div>
     </div>
   );
 };

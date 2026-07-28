@@ -39,7 +39,7 @@ const PowerFlowView = () => {
   const { data: currentSite, isLoading, isError } = useSite(siteId);
   const rooms = currentSite?.rooms || [];
   const allEquipment = currentSite?.rooms?.flatMap((room: any) => room.equipments || []) || [];
-  const hasDetailedTopology = siteId === 'msc10-blida' && allEquipment.some((item: any) => item.name === 'UPS-A');
+  const hasDetailedTopology = siteId === 'msc10-blida' && allEquipment.some((item: any) => item.name === 'UPS');
 
   const statusForEquipment = (name: string): FlowStatus => {
     const equipment = allEquipment.find((item: any) => item.name === name);
@@ -58,9 +58,9 @@ const PowerFlowView = () => {
     return 'healthy';
   };
 
-  const upsA = Object.values(equipmentData).find(e => e.equipmentName === 'UPS-A');
-  const upsLoad = upsA?.metrics?.load || 54;
-  const upsStatus = statusForEquipment('UPS-A');
+  const ups = Object.values(equipmentData).find(e => e.equipmentName === 'UPS');
+  const upsLoad = ups?.metrics?.load || 54;
+  const upsStatus = statusForEquipment('UPS');
   const atsStatus = statusForEquipment('ATS-TGBT');
   const generatorStatus = statusForEquipment('GE-02-SDMO-400KVA');
   const coolingStatus = statusForEquipment('CLIM-STULZ-01');
@@ -72,7 +72,7 @@ const PowerFlowView = () => {
       { id: 'ats', position: { x: 330, y: 240 }, data: { label: 'ATS / TGBT\nSource Transfer' }, style: nodeStyle(atsStatus) },
       { id: 'generator1', position: { x: 70, y: 215 }, data: { label: 'GE-01 Cummins\n400 KVA' }, style: nodeStyle(statusForEquipment('GE-01-CUMMINS-400KVA')) },
       { id: 'generator2', position: { x: 70, y: 325 }, data: { label: 'GE-02 SDMO\nStandby' }, style: nodeStyle(generatorStatus) },
-      { id: 'ups', position: { x: 330, y: 365 }, data: { label: `UPS-A\nLoad ${upsLoad.toFixed(1)}%` }, style: nodeStyle(upsLoad > 85 ? 'critical' : upsStatus) },
+      { id: 'ups', position: { x: 330, y: 365 }, data: { label: `UPS\nLoad ${upsLoad.toFixed(1)}%` }, style: nodeStyle(upsLoad > 85 ? 'critical' : upsStatus) },
       { id: 'panel', position: { x: 330, y: 490 }, data: { label: 'Distribution Panels\nProtected Loads' }, style: nodeStyle(upsStatus === 'critical' ? 'critical' : atsStatus) },
       { id: 'switch', position: { x: 60, y: 630 }, data: { label: 'Switch Room\nCore Equipment' }, type: 'output' as const, style: nodeStyle(statusForEquipment('SWITCH-MSC10-Core')) },
       { id: 'battery', position: { x: 250, y: 630 }, data: { label: 'Battery Room\nBattery Bank' }, type: 'output' as const, style: nodeStyle(statusForEquipment('BATT-BANK-A')) },
@@ -151,7 +151,7 @@ const PowerFlowView = () => {
       <div className="h-full min-h-[560px] w-full bg-background rounded-lg border border-border-subtle flex items-center justify-center">
         <div className="text-center max-w-md">
           <h2 className="text-xl font-display font-bold text-on-surface">{currentSite.name} Power Flow</h2>
-          <p className="text-on-surface-variant mt-2">No room or equipment topology has been configured for this site yet.</p>
+          <p className="text-on-surface-variant mt-2">Coming soon. This site does not have its power topology loaded yet.</p>
         </div>
       </div>
     );

@@ -246,8 +246,8 @@ async function main() {
   const equipment = await Promise.all([
     prisma.equipment.upsert({
       where: { id: 'eq-ups-a' },
-      update: { roomId: roomById['room-ups'].id, name: 'UPS-A', type: 'UPS', status: 'warning' },
-      create: { id: 'eq-ups-a', roomId: roomById['room-ups'].id, name: 'UPS-A', type: 'UPS', status: 'warning' }
+      update: { roomId: roomById['room-ups'].id, name: 'UPS', type: 'UPS', status: 'warning' },
+      create: { id: 'eq-ups-a', roomId: roomById['room-ups'].id, name: 'UPS', type: 'UPS', status: 'warning' }
     }),
     prisma.equipment.upsert({
       where: { id: 'eq-battery-bank-a' },
@@ -302,6 +302,66 @@ async function main() {
   ]);
 
   const equipmentById = Object.fromEntries(equipment.map((item) => [item.id, item]));
+  await prisma.telemetry.deleteMany({
+    where: { equipmentId: { in: desiredEquipmentIds } }
+  });
+
+  await prisma.telemetry.createMany({
+    data: [
+      { equipmentId: equipmentById['eq-ups-a'].id, metricType: 'temperature', value: 31 },
+      { equipmentId: equipmentById['eq-ups-a'].id, metricType: 'humidity', value: 45 },
+      { equipmentId: equipmentById['eq-ups-a'].id, metricType: 'load', value: 54 },
+      { equipmentId: equipmentById['eq-ups-a'].id, metricType: 'powerDraw', value: 122 },
+      { equipmentId: equipmentById['eq-ups-a'].id, metricType: 'inputVoltageL1', value: 227 },
+      { equipmentId: equipmentById['eq-ups-a'].id, metricType: 'inputVoltageL2', value: 230 },
+      { equipmentId: equipmentById['eq-ups-a'].id, metricType: 'inputVoltageL3', value: 231 },
+      { equipmentId: equipmentById['eq-ups-a'].id, metricType: 'batteryCapacity', value: 100 },
+      { equipmentId: equipmentById['eq-ats-tgbt'].id, metricType: 'temperature', value: 25.5 },
+      { equipmentId: equipmentById['eq-ats-tgbt'].id, metricType: 'humidity', value: 45 },
+      { equipmentId: equipmentById['eq-ats-tgbt'].id, metricType: 'load', value: 42 },
+      { equipmentId: equipmentById['eq-ats-tgbt'].id, metricType: 'powerDraw', value: 48 },
+      { equipmentId: equipmentById['eq-ats-tgbt'].id, metricType: 'inputVoltageL1', value: 227 },
+      { equipmentId: equipmentById['eq-ats-tgbt'].id, metricType: 'inputVoltageL2', value: 230 },
+      { equipmentId: equipmentById['eq-ats-tgbt'].id, metricType: 'inputVoltageL3', value: 231 },
+      { equipmentId: equipmentById['eq-battery-bank-a'].id, metricType: 'temperature', value: 23 },
+      { equipmentId: equipmentById['eq-battery-bank-a'].id, metricType: 'humidity', value: 50 },
+      { equipmentId: equipmentById['eq-battery-bank-a'].id, metricType: 'load', value: 30 },
+      { equipmentId: equipmentById['eq-battery-bank-a'].id, metricType: 'powerDraw', value: 42 },
+      { equipmentId: equipmentById['eq-battery-bank-a'].id, metricType: 'batteryCapacity', value: 100 },
+      { equipmentId: equipmentById['eq-switch-core'].id, metricType: 'temperature', value: 23 },
+      { equipmentId: equipmentById['eq-switch-core'].id, metricType: 'humidity', value: 45 },
+      { equipmentId: equipmentById['eq-switch-core'].id, metricType: 'load', value: 45 },
+      { equipmentId: equipmentById['eq-switch-core'].id, metricType: 'powerDraw', value: 50 },
+      { equipmentId: equipmentById['eq-vsat-rack'].id, metricType: 'temperature', value: 23 },
+      { equipmentId: equipmentById['eq-vsat-rack'].id, metricType: 'humidity', value: 43 },
+      { equipmentId: equipmentById['eq-vsat-rack'].id, metricType: 'load', value: 38 },
+      { equipmentId: equipmentById['eq-vsat-rack'].id, metricType: 'powerDraw', value: 46 },
+      { equipmentId: equipmentById['eq-rectifier-huawei'].id, metricType: 'temperature', value: 24 },
+      { equipmentId: equipmentById['eq-rectifier-huawei'].id, metricType: 'humidity', value: 44 },
+      { equipmentId: equipmentById['eq-rectifier-huawei'].id, metricType: 'load', value: 52 },
+      { equipmentId: equipmentById['eq-rectifier-huawei'].id, metricType: 'powerDraw', value: 55 },
+      { equipmentId: equipmentById['eq-generator-01'].id, metricType: 'temperature', value: 31 },
+      { equipmentId: equipmentById['eq-generator-01'].id, metricType: 'humidity', value: 40 },
+      { equipmentId: equipmentById['eq-generator-01'].id, metricType: 'load', value: 35 },
+      { equipmentId: equipmentById['eq-generator-01'].id, metricType: 'powerDraw', value: 48 },
+      { equipmentId: equipmentById['eq-generator-02'].id, metricType: 'temperature', value: 30 },
+      { equipmentId: equipmentById['eq-generator-02'].id, metricType: 'humidity', value: 40 },
+      { equipmentId: equipmentById['eq-generator-02'].id, metricType: 'load', value: 0 },
+      { equipmentId: equipmentById['eq-generator-02'].id, metricType: 'powerDraw', value: 0 },
+      { equipmentId: equipmentById['eq-transformer-tr1'].id, metricType: 'temperature', value: 25 },
+      { equipmentId: equipmentById['eq-transformer-tr1'].id, metricType: 'humidity', value: 45 },
+      { equipmentId: equipmentById['eq-transformer-tr1'].id, metricType: 'load', value: 44 },
+      { equipmentId: equipmentById['eq-transformer-tr1'].id, metricType: 'powerDraw', value: 58 },
+      { equipmentId: equipmentById['eq-clim-stulz-01'].id, metricType: 'temperature', value: 24.8 },
+      { equipmentId: equipmentById['eq-clim-stulz-01'].id, metricType: 'humidity', value: 50 },
+      { equipmentId: equipmentById['eq-clim-stulz-01'].id, metricType: 'load', value: 46 },
+      { equipmentId: equipmentById['eq-clim-stulz-01'].id, metricType: 'powerDraw', value: 50 },
+      { equipmentId: equipmentById['eq-clim-eniem-01'].id, metricType: 'temperature', value: 22.5 },
+      { equipmentId: equipmentById['eq-clim-eniem-01'].id, metricType: 'humidity', value: 50 },
+      { equipmentId: equipmentById['eq-clim-eniem-01'].id, metricType: 'load', value: 40 },
+      { equipmentId: equipmentById['eq-clim-eniem-01'].id, metricType: 'powerDraw', value: 48 }
+    ]
+  });
 
   const alarms = await Promise.all([
     prisma.alarm.upsert({
@@ -362,7 +422,7 @@ async function main() {
       update: {
         alarmId: alarmById['alarm-ups-sync'].id,
         equipmentId: equipmentById['eq-ups-a'].id,
-        title: 'Restore UPS-A protected inverter path',
+        title: 'Restore UPS protected inverter path',
         status: 'assigned',
         priority: 'high',
         assignedTo: engineerUser.id,
@@ -372,7 +432,7 @@ async function main() {
         id: 'ticket-ups-sync',
         alarmId: alarmById['alarm-ups-sync'].id,
         equipmentId: equipmentById['eq-ups-a'].id,
-        title: 'Restore UPS-A protected inverter path',
+        title: 'Restore UPS protected inverter path',
         status: 'assigned',
         priority: 'high',
         assignedTo: engineerUser.id,
@@ -616,13 +676,13 @@ async function main() {
       where: { id: 'notif-engineer-ticket-assigned' },
       update: {
         userId: engineerUser.id,
-        message: 'Ticket ticket-ups-sync assigned: restore UPS-A protected inverter path.',
+        message: 'Ticket ticket-ups-sync assigned: restore UPS protected inverter path.',
         read: false
       },
       create: {
         id: 'notif-engineer-ticket-assigned',
         userId: engineerUser.id,
-        message: 'Ticket ticket-ups-sync assigned: restore UPS-A protected inverter path.',
+        message: 'Ticket ticket-ups-sync assigned: restore UPS protected inverter path.',
         read: false
       }
     }),

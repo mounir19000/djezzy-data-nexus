@@ -42,6 +42,7 @@ export const useCreateMaintenanceTask = () => {
       queryClient.invalidateQueries({ queryKey: ['maintenance'] });
       queryClient.invalidateQueries({ queryKey: ['sites'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['site-dashboard'] });
     }
   });
 };

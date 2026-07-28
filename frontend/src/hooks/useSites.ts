@@ -32,3 +32,20 @@ export const useSite = (siteId?: string) => {
     enabled: !!siteId,
   });
 };
+
+const fetchSiteDashboard = async (siteId: string) => {
+  const token = localStorage.getItem('djezzy_token');
+  const res = await fetch(`http://localhost:4000/api/sites/${siteId}/dashboard`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!res.ok) throw new Error('Failed to fetch site dashboard');
+  return res.json();
+};
+
+export const useSiteDashboard = (siteId?: string) => {
+  return useQuery({
+    queryKey: ['site-dashboard', siteId],
+    queryFn: () => fetchSiteDashboard(siteId!),
+    enabled: !!siteId,
+  });
+};
