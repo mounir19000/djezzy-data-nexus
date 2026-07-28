@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
 import { useSites } from '../../hooks/useSites';
+import { NotificationTray } from '../ui/NotificationTray';
 
 const fallbackSiteName = (siteId?: string) => {
   if (siteId === 'msc10-blida') return 'MSC10 Blida';
@@ -114,6 +115,8 @@ const Topbar = () => {
       </div>
       {/* Right Actions */}
       <div className="flex items-center gap-4">
+        <NotificationTray />
+
         {/* User Profile */}
         <div className="flex items-center gap-3 border-l border-border-subtle pl-4">
           <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-sm uppercase">

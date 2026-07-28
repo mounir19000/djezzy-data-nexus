@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
-import { AlertCircle, CheckCircle, Clock, FileCheck, Plus, User, X, Search, Filter } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, FileCheck, Plus, User, X, Search, Trash2 } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
-import { useCreateTicket, useSubmitTicketReport, useTickets, useUpdateTicketStatus } from '../../hooks/useTickets';
+import { useCreateTicket, useDeleteTicket, useSubmitTicketReport, useTickets, useUpdateTicketStatus } from '../../hooks/useTickets';
 import { useSites } from '../../hooks/useSites';
 import { useUsers } from '../../hooks/useUsers';
 import { useAppStore } from '../../store/useAppStore';
@@ -68,16 +68,20 @@ const TicketCard = ({
   canReport,
   canAssign,
   canDrag,
+  canDelete,
   onReport,
   onAssign,
+  onDelete,
   onDragStart
 }: {
   ticket: any;
   canReport: boolean;
   canAssign: boolean;
   canDrag: boolean;
+  canDelete: boolean;
   onReport: () => void;
   onAssign: () => void;
+  onDelete: () => void;
   onDragStart: (event: any, id: string) => void;
 }) => (
   <div
@@ -146,6 +150,17 @@ const TicketCard = ({
       <div className="flex items-center gap-1 text-xs text-on-surface-variant shrink-0">
         <Clock className="w-3 h-3" /> {ticket.dueDate ? new Date(ticket.dueDate).toLocaleDateString() : new Date(ticket.createdAt).toLocaleDateString()}
       </div>
+      {canDelete && (
+        <button
+          type="button"
+          onClick={onDelete}
+          title="Delete ticket"
+          aria-label={`Delete ticket ${ticket.id.substring(0, 8)}`}
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border-subtle text-on-surface-variant hover:border-status-critical hover:text-status-critical transition-colors shrink-0"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      )}
     </div>
   </div>
 );
@@ -157,9 +172,11 @@ const KanbanColumn = ({
   onDrop,
   onReport,
   onAssign,
+  onDelete,
   canReportTicket,
   canAssignTicket,
-  canDragTicket
+  canDragTicket,
+  canDeleteTicket
 }: {
   title: string;
   status: string;
@@ -167,9 +184,11 @@ const KanbanColumn = ({
   onDrop: (status: string, ticketId: string) => void;
   onReport: (ticket: any) => void;
   onAssign: (ticket: any, targetStatus?: string) => void;
+  onDelete: (ticket: any) => void;
   canReportTicket: (ticket: any) => boolean;
   canAssignTicket: (ticket: any) => boolean;
   canDragTicket: (ticket: any) => boolean;
+  canDeleteTicket: (ticket: any) => boolean;
 }) => (
   <div
     className="flex flex-col bg-bg-surface border border-border-subtle rounded-lg overflow-hidden h-full"
@@ -192,8 +211,10 @@ const KanbanColumn = ({
           canReport={canReportTicket(ticket)}
           canAssign={canAssignTicket(ticket)}
           canDrag={canDragTicket(ticket)}
+          canDelete={canDeleteTicket(ticket)}
           onReport={() => onReport(ticket)}
           onAssign={() => onAssign(ticket)}
+          onDelete={() => onDelete(ticket)}
           onDragStart={(event, id) => event.dataTransfer.setData('ticketId', id)}
         />
       ))}
@@ -210,6 +231,7 @@ const TicketKanban = () => {
   const { mutate: updateStatus, isPending: isUpdatingStatus } = useUpdateTicketStatus();
   const { mutate: createTicket, isPending: isCreating } = useCreateTicket();
   const { mutate: submitReport, isPending: isSubmittingReport } = useSubmitTicketReport();
+  const { mutate: deleteTicket, isPending: isDeletingTicket } = useDeleteTicket();
   const { data: sites } = useSites();
   const { data: users } = useUsers();
   const user = useAppStore((state) => state.user);
@@ -218,6 +240,7 @@ const TicketKanban = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [assignmentIntent, setAssignmentIntent] = useState<{ ticket: any; targetStatus: string } | null>(null);
   const [reportIntent, setReportIntent] = useState<{ ticket: any; targetStatus: string } | null>(null);
+  const [deleteIntent, setDeleteIntent] = useState<any | null>(null);
   const [selectedAssignee, setSelectedAssignee] = useState('');
   const [reportTicket, setReportTicket] = useState<any | null>(null);
   const [reportError, setReportError] = useState<string | null>(null);
@@ -259,6 +282,7 @@ const TicketKanban = () => {
   const scopedSites = useMemo(() => siteId ? sites?.filter((site: any) => site.id === siteId) : sites, [sites, siteId]);
   const canCreateTicket = ['Super Admin', 'Site Operator'].includes(user?.role || '');
   const canAssign = ['Super Admin', 'Site Operator', 'Engineer'].includes(user?.role || '');
+  const canDeleteTickets = ['Super Admin', 'Site Operator'].includes(user?.role || '');
 
   const equipmentOptions = useMemo(() => {
     return scopedSites?.flatMap((site: any) => site.rooms?.flatMap((room: any) => room.equipments?.map((equipment: any) => ({
@@ -304,6 +328,8 @@ const TicketKanban = () => {
     if (user?.role === 'Engineer' && ticket.assignedTo === user?.id) return true;
     return false;
   };
+
+  const canDeleteTicket = () => canDeleteTickets;
 
   const openCreateModal = () => {
     setFormError(null);
@@ -440,6 +466,16 @@ const TicketKanban = () => {
     });
   };
 
+  const handleDeleteConfirm = () => {
+    if (!deleteIntent) return;
+
+    setBoardError(null);
+    deleteTicket(deleteIntent.id, {
+      onSuccess: () => setDeleteIntent(null),
+      onError: (error) => setBoardError(error.message)
+    });
+  };
+
   if (isLoading) return <div className="p-8 text-on-surface">Loading tickets...</div>;
 
   return (
@@ -505,9 +541,11 @@ const TicketKanban = () => {
             onDrop={handleDrop}
             onReport={openReportModal}
             onAssign={openAssignmentModal}
+            onDelete={setDeleteIntent}
             canReportTicket={canReportTicket}
             canAssignTicket={canAssignTicket}
             canDragTicket={canDragTicket}
+            canDeleteTicket={canDeleteTicket}
           />
         ))}
       </div>
@@ -719,6 +757,30 @@ const TicketKanban = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {deleteIntent && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-bg-surface border border-border-subtle rounded-lg w-full max-w-md shadow-xl">
+            <div className="flex justify-between items-center p-4 border-b border-border-subtle">
+              <h3 className="text-lg font-sans font-medium text-on-surface">Delete Ticket</h3>
+              <button onClick={() => setDeleteIntent(null)} className="text-on-surface-variant hover:text-on-surface">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <p className="text-sm text-on-surface-variant">
+                Ticket {deleteIntent.id.substring(0, 8)} will be removed from the board.
+              </p>
+              <div className="flex justify-end gap-3 pt-4 border-t border-border-subtle">
+                <button type="button" onClick={() => setDeleteIntent(null)} className="px-4 py-2 rounded-md font-medium text-on-surface hover:bg-bg-secondary transition-colors">Cancel</button>
+                <button disabled={isDeletingTicket} type="button" onClick={handleDeleteConfirm} className="bg-status-critical text-white px-4 py-2 rounded-md font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
+                  {isDeletingTicket ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

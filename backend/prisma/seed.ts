@@ -73,7 +73,8 @@ async function main() {
         'read:sites',
         'read:alarms',
         'read:diagnoses',
-        'create:tickets'
+        'create:tickets',
+        'delete:tickets'
       ]
     },
     create: {
@@ -82,7 +83,8 @@ async function main() {
         'read:sites',
         'read:alarms',
         'read:diagnoses',
-        'create:tickets'
+        'create:tickets',
+        'delete:tickets'
       ]
     }
   });

@@ -249,6 +249,30 @@ router.put('/:id/status', requireAuth, async (req: any, res: Response) => {
   }
 });
 
+// Delete a ticket. Site Operators can delete tickets in their assigned sites; Super Admins can delete any ticket.
+router.delete('/:id', requireAuth, requireRole(['Site Operator']), async (req: any, res: Response) => {
+  const authReq = req as AuthRequest;
+
+  try {
+    const ticket = await findAccessibleTicket(req.params.id, authReq.user);
+    if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+
+    await prisma.ticket.delete({
+      where: { id: ticket.id }
+    });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('ticket_update', { type: 'deleted', ticketId: ticket.id, alarmId: ticket.alarmId });
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    console.error('Delete ticket error:', error);
+    res.status(500).json({ error: 'Failed to delete ticket' });
+  }
+});
+
 // Submit or update the engineer response report for a ticket.
 router.post('/:id/report', requireAuth, requireRole(['Engineer']), async (req: any, res: Response) => {
   const authReq = req as AuthRequest;
