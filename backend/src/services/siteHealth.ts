@@ -75,12 +75,12 @@ const phases: Phase[] = ['L1', 'L2', 'L3'];
 const inputVoltageMetricTypes = (phase: Phase) => [`inputVoltage${phase}`, `DS3_Input_Voltage_${phase}`];
 const outputLoadMetricTypes = (phase: Phase) => [`outputLoad${phase}`, `DS3_Output_Load_${phase}`];
 
-const roomTemperature = (room: RoomLike, metrics: LatestMetricMap) => {
+const roomTemperature = (room: RoomLike, metrics: LatestMetricMap, targetTemp: number) => {
   const temperatures = (room.equipments || [])
     .map((equipment) => latestMetric(metrics, equipment.id, 'temperature'))
     .filter((value): value is number => typeof value === 'number');
 
-  if (temperatures.length === 0) return room.targetTemp * 0.92;
+  if (temperatures.length === 0) return targetTemp * 0.92;
 
   return temperatures.reduce((sum, value) => sum + value, 0) / temperatures.length;
 };
@@ -119,16 +119,11 @@ const scorePhaseBalance = (unbalance: number) => {
   return 30;
 };
 
-const roomCauses = (room: RoomLike, temperature: number, score: number) => {
+const roomCauses = (room: RoomLike, temperature: number, score: number, targetTemp: number) => {
   const equipment = room.equipments || [];
   const causes = alarmCausesForEquipment(equipment);
-  const offlineEquipment = equipment.filter((item) => item.status === 'offline');
 
-  if (offlineEquipment.length > 0) {
-    causes.push(`${offlineEquipment.map((item) => item.name).join(', ')} offline in ${room.name}`);
-  }
-
-  if (temperature > room.targetTemp) {
+  if (temperature > targetTemp) {
     causes.push(`${room.name} is running hot`);
   } else if (score < 90) {
     causes.push(`${room.name} temperature is rising`);
@@ -158,7 +153,7 @@ const upsCauses = (
 
   if (typeof phaseUnbalance === 'number' && phaseUnbalance > 25) {
     causes.push(`UPS output phases are severely unbalanced (${round(phaseUnbalance)}%).`);
-  } else if (typeof phaseUnbalance === 'number' && phaseUnbalance >= 10) {
+  } else if (typeof phaseUnbalance === 'number' && phaseUnbalance >= 20) {
     causes.push(`UPS output phases are unbalanced (${round(phaseUnbalance)}%).`);
   }
 
@@ -168,7 +163,7 @@ const upsCauses = (
     causes.push('Battery reserve needs attention');
   }
 
-  if (typeof temperature === 'number' && temperature > 30) {
+  if (typeof temperature === 'number' && temperature > 40) {
     causes.push('UPS is running hot');
   }
 
@@ -189,9 +184,11 @@ export const calculateSiteHealth = (site: SiteLike, metrics: LatestMetricMap) =>
     .map((equipment) => latestMetricFromAliases(metrics, equipment.id, ['batteryCapacity', 'DS3_Battery_Capacity']))
     .find((value) => typeof value === 'number');
   const roomScores = rooms.map((room) => {
-    const temperature = roomTemperature(room, metrics);
-    const score = scoreTemperature(temperature, room.targetTemp);
-    const causes = roomCauses(room, temperature, score);
+    const isUPSRoom = room.name.toLowerCase().includes('ups');
+    const actualTargetTemp = isUPSRoom ? 40 : 26.5;
+    const temperature = roomTemperature(room, metrics, actualTargetTemp);
+    const score = scoreTemperature(temperature, actualTargetTemp);
+    const causes = roomCauses(room, temperature, score, actualTargetTemp);
 
     return {
       id: room.id,
@@ -201,7 +198,7 @@ export const calculateSiteHealth = (site: SiteLike, metrics: LatestMetricMap) =>
       status: statusFromScore(score),
       weight: 0,
       temperature: round(temperature),
-      threshold: room.targetTemp,
+      threshold: actualTargetTemp,
       summary: mainCause(causes),
       causes
     };
@@ -228,7 +225,7 @@ export const calculateSiteHealth = (site: SiteLike, metrics: LatestMetricMap) =>
   const loadScore = typeof upsLoad === 'number' ? scoreLoad(upsLoad) : 100;
   const phaseBalanceScore = typeof phaseUnbalance === 'number' ? scorePhaseBalance(phaseUnbalance) : 100;
   const batteryScore = typeof batteryCapacity === 'number' ? (batteryCapacity >= 95 ? 100 : 0) : 100;
-  const internalTempScore = typeof upsTemperature === 'number' ? scoreTemperature(upsTemperature, 30) : 100;
+  const internalTempScore = typeof upsTemperature === 'number' ? scoreTemperature(upsTemperature, 40) : 100;
   const upsBaseMetrics = [
     { score: loadScore, weight: 35 },
     { score: phaseBalanceScore, weight: 20 },
