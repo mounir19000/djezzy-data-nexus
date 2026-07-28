@@ -51,9 +51,6 @@ const DigitalTwinDashboard = () => {
       const temperature = telemetry.length
         ? telemetry.reduce((sum: number, item: any) => sum + item.temperature, 0) / telemetry.length
         : room.targetTemp * 0.92;
-      const humidity = telemetry.length
-        ? telemetry.reduce((sum: number, item: any) => sum + item.humidity, 0) / telemetry.length
-        : room.targetHumidity;
       const activeAlarms = equipment.reduce((sum: number, item: any) => sum + (item.alarms?.length || 0), 0);
       const openTickets = equipment.reduce((sum: number, item: any) => sum + (item.tickets?.length || 0), 0);
       const hasOfflineEquipment = equipment.some((item: any) => item.status === 'offline');
@@ -62,7 +59,6 @@ const DigitalTwinDashboard = () => {
       return {
         ...room,
         temperature,
-        humidity,
         healthScore,
         activeAlarms,
         openTickets,
@@ -136,7 +132,6 @@ const DigitalTwinDashboard = () => {
               name={room.name}
               status={room.status}
               temp={Number(room.temperature.toFixed(1))}
-              humidity={Number(room.humidity.toFixed(1))}
               healthScore={room.healthScore}
               tickets={room.openTickets}
               alarms={room.activeAlarms}

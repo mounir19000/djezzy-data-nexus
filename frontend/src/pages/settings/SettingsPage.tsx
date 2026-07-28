@@ -1,16 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
 import { Save, AlertTriangle, Shield } from 'lucide-react';
 import { useExpertRules, useUpdateRule } from '../../hooks/useSettings';
-import { useSite } from '../../hooks/useSites';
 
 const SettingsPage = () => {
-  const params = useParams();
-  const [searchParams] = useSearchParams();
-  const siteId = params.siteId || searchParams.get('siteId') || undefined;
-  
-  const { data: expertRules, isLoading } = useExpertRules(siteId);
-  const { data: currentSite } = useSite(siteId);
+  const { data: expertRules, isLoading } = useExpertRules();
   const { mutate: updateRule } = useUpdateRule();
   const [localRules, setLocalRules] = useState<any[]>([]);
 
@@ -34,17 +27,17 @@ const SettingsPage = () => {
     <div className="h-full flex flex-col space-y-6 max-w-4xl mx-auto w-full">
       <header>
         <h2 className="text-3xl font-display font-bold text-on-surface">
-          {currentSite ? `${currentSite.name} Settings` : 'Platform Settings'}
+          Platform Settings
         </h2>
         <p className="text-on-surface-variant font-sans mt-1">
-          {currentSite ? `Configure thresholds and rules specific to ${currentSite.name}.` : 'Configure global platform thresholds and expert system logic.'}
+          Configure global platform thresholds and expert system logic.
         </p>
       </header>
 
       <div className="bg-bg-surface border border-border-subtle rounded-lg overflow-hidden flex flex-col">
         <div className="px-6 py-4 border-b border-border-subtle bg-bg-secondary flex items-center justify-between">
           <h3 className="text-lg font-sans font-medium text-on-surface flex items-center gap-2">
-            <Shield className="w-5 h-5 text-secondary" /> {currentSite ? 'Site Rules' : 'Expert System Rules'}
+            <Shield className="w-5 h-5 text-secondary" /> Expert System Rules
           </h3>
           <span className="text-xs font-mono text-status-warning bg-status-warning/10 px-2 py-0.5 rounded border border-status-warning/20">Super Admin Privileges Required</span>
         </div>

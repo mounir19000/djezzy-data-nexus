@@ -33,11 +33,6 @@ const SiteQueryRedirect = ({ target }: { target: 'digital-twin' | 'power-flow' }
 };
 
 const LegacySettingsRoute = () => {
-  const [searchParams] = useSearchParams();
-  const siteId = searchParams.get('siteId');
-
-  if (siteId) return <Navigate to={`/sites/${siteId}/configuration`} replace />;
-
   return (
     <RoleBoundary allowedRoles={['Super Admin']}>
       <SettingsPage />
@@ -70,11 +65,6 @@ function App() {
           <Route path="sites/:siteId/power-flow" element={<PowerFlowView />} />
           <Route path="sites/:siteId/tickets" element={<TicketKanban />} />
           <Route path="sites/:siteId/reports" element={<Reports />} />
-          <Route path="sites/:siteId/configuration" element={
-            <RoleBoundary allowedRoles={['Super Admin']}>
-              <SettingsPage />
-            </RoleBoundary>
-          } />
           <Route path="twin" element={<SiteQueryRedirect target="digital-twin" />} />
           <Route path="power-flow" element={<SiteQueryRedirect target="power-flow" />} />
           <Route path="incidents" element={<IncidentDiagnosisCenter />} />
