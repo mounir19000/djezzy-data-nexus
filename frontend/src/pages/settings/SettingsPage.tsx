@@ -1,19 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Save, AlertTriangle, Shield, CheckCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { Save, AlertTriangle, Shield } from 'lucide-react';
 import { useExpertRules, useUpdateRule } from '../../hooks/useSettings';
-import { useSites } from '../../hooks/useSites';
+import { useSite } from '../../hooks/useSites';
 
 const SettingsPage = () => {
+  const params = useParams();
   const [searchParams] = useSearchParams();
-  const siteId = searchParams.get('siteId') || undefined;
+  const siteId = params.siteId || searchParams.get('siteId') || undefined;
   
   const { data: expertRules, isLoading } = useExpertRules(siteId);
-  const { data: sites } = useSites();
+  const { data: currentSite } = useSite(siteId);
   const { mutate: updateRule } = useUpdateRule();
   const [localRules, setLocalRules] = useState<any[]>([]);
-
-  const currentSite = siteId ? sites?.find((s: any) => s.id === siteId) : null;
 
   useEffect(() => {
     if (expertRules) {
@@ -47,7 +46,7 @@ const SettingsPage = () => {
           <h3 className="text-lg font-sans font-medium text-on-surface flex items-center gap-2">
             <Shield className="w-5 h-5 text-secondary" /> {currentSite ? 'Site Rules' : 'Expert System Rules'}
           </h3>
-          <span className="text-xs font-mono text-status-warning bg-status-warning/10 px-2 py-0.5 rounded border border-status-warning/20">Admin/Engineer Privileges Required</span>
+          <span className="text-xs font-mono text-status-warning bg-status-warning/10 px-2 py-0.5 rounded border border-status-warning/20">Super Admin Privileges Required</span>
         </div>
         
         <div className="p-6 space-y-6">
@@ -55,7 +54,7 @@ const SettingsPage = () => {
             <AlertTriangle className="w-5 h-5 text-status-warning shrink-0 mt-0.5" />
             <div>
               <h4 className="text-sm font-medium text-status-warning">Modifying Active Thresholds</h4>
-              <p className="text-xs text-status-warning/80 mt-1">Changes made here will instantly update the AI inference engine across all Djezzy sites. Incorrect values may cause false alarms or suppress critical failures.</p>
+              <p className="text-xs text-status-warning/80 mt-1">Changes made here update the rule-based expert system. Incorrect values may cause false alarms or suppress critical failures.</p>
             </div>
           </div>
 

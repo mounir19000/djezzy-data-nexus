@@ -1,5 +1,4 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useSearchParams } from 'react-router-dom';
 import MainLayout from './components/layout/MainLayout';
 import NationalOperationsDashboard from './pages/national/NationalOperationsDashboard';
 import NationalAnalyticsDashboard from './pages/national/NationalAnalyticsDashboard';
@@ -10,20 +9,39 @@ import TicketKanban from './pages/operations/TicketKanban';
 import MaintenanceCalendar from './pages/operations/MaintenanceCalendar';
 import KnowledgeCenter from './pages/operations/KnowledgeCenter';
 import Reports from './pages/operations/Reports';
-import ExecutiveReportGenerator from './pages/national/ExecutiveReportGenerator';
 import SettingsPage from './pages/settings/SettingsPage';
 import LoginPage from './pages/auth/LoginPage';
 import { ProtectedRoute, RoleBoundary } from './components/layout/ProtectedRoute';
+import { useAppStore } from './store/useAppStore';
 
-// Placeholder Pages (To be built in subsequent phases)
-const PlaceholderPage = ({ title }: { title: string }) => (
-  <div className="flex flex-col items-center justify-center h-[60vh]">
-    <h2 className="text-3xl font-display font-bold text-primary mb-4">{title}</h2>
-    <p className="text-on-surface-variant font-sans">This module is scheduled for a future development phase.</p>
-  </div>
-);
+const RoleHome = () => {
+  const user = useAppStore((state) => state.user);
 
-// No more placeholders!
+  if (user?.role === 'Engineer') return <Navigate to="/sites/msc10-blida/digital-twin" replace />;
+  if (user?.role === 'Site Operator') return <Navigate to="/incidents?siteId=msc10-blida" replace />;
+
+  return <NationalOperationsDashboard />;
+};
+
+const SiteQueryRedirect = ({ target }: { target: 'digital-twin' | 'power-flow' }) => {
+  const [searchParams] = useSearchParams();
+  const siteId = searchParams.get('siteId') || 'msc10-blida';
+
+  return <Navigate to={`/sites/${siteId}/${target}`} replace />;
+};
+
+const LegacySettingsRoute = () => {
+  const [searchParams] = useSearchParams();
+  const siteId = searchParams.get('siteId');
+
+  if (siteId) return <Navigate to={`/sites/${siteId}/configuration`} replace />;
+
+  return (
+    <RoleBoundary allowedRoles={['Super Admin']}>
+      <SettingsPage />
+    </RoleBoundary>
+  );
+};
 
 function App() {
   return (
@@ -37,20 +55,32 @@ function App() {
           </ProtectedRoute>
         }>
           {/* Default Route */}
-          <Route index element={<NationalOperationsDashboard />} />
-          <Route path="analytics" element={<NationalAnalyticsDashboard />} />
-          <Route path="twin" element={<DigitalTwinDashboard />} />
-          <Route path="power-flow" element={<PowerFlowView />} />
-          <Route path="incidents" element={<IncidentDiagnosisCenter />} />
-          <Route path="tickets" element={<TicketKanban />} />
-          <Route path="maintenance" element={<MaintenanceCalendar />} />
-          <Route path="knowledge" element={<KnowledgeCenter />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="settings" element={
-            <RoleBoundary allowedRoles={['Super Admin', 'Engineer']}>
+          <Route index element={<RoleHome />} />
+          <Route path="analytics" element={
+            <RoleBoundary allowedRoles={['Super Admin']}>
+              <NationalAnalyticsDashboard />
+            </RoleBoundary>
+          } />
+          <Route path="sites/:siteId" element={<Navigate to="digital-twin" replace />} />
+          <Route path="sites/:siteId/digital-twin" element={<DigitalTwinDashboard />} />
+          <Route path="sites/:siteId/power-flow" element={<PowerFlowView />} />
+          <Route path="sites/:siteId/configuration" element={
+            <RoleBoundary allowedRoles={['Super Admin']}>
               <SettingsPage />
             </RoleBoundary>
           } />
+          <Route path="twin" element={<SiteQueryRedirect target="digital-twin" />} />
+          <Route path="power-flow" element={<SiteQueryRedirect target="power-flow" />} />
+          <Route path="incidents" element={<IncidentDiagnosisCenter />} />
+          <Route path="tickets" element={<TicketKanban />} />
+          <Route path="maintenance" element={
+            <RoleBoundary allowedRoles={['Super Admin', 'Engineer']}>
+              <MaintenanceCalendar />
+            </RoleBoundary>
+          } />
+          <Route path="knowledge" element={<KnowledgeCenter />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="settings" element={<LegacySettingsRoute />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

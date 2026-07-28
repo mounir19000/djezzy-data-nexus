@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import KPICard from '../../components/ui/KPICard';
 import Badge from '../../components/ui/Badge';
 import { Activity, MapPin, AlertTriangle, ShieldCheck, Ticket, Wrench, CheckCircle } from 'lucide-react';
@@ -7,41 +7,24 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-// Fix leaflet default icon issue in react
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+const statusForHealth = (health: number): 'healthy' | 'warning' | 'critical' => {
+  if (health >= 90) return 'healthy';
+  if (health >= 70) return 'warning';
+  return 'critical';
+};
 
-const SIMULATED_FEED_DATA = [
-  { id: 'sim-1', type: 'alarm', title: 'Site MSC10 Blida - WARNING', description: 'UPS-A temperature approaching threshold (24.5°C)', severity: 'warning' },
-  { id: 'sim-2', type: 'ticket', title: 'Ticket TKT-8921 Updated', description: 'Ticket status is now inProgress.', severity: 'secondary' },
-  { id: 'sim-3', type: 'alarm', title: 'Site MSC01 Algiers - CRITICAL', description: 'Main Grid Power Loss Detected', severity: 'critical' },
-  { id: 'sim-4', type: 'alarm', title: 'Site MSC10 Blida - HEALTHY', description: 'Generator auto-start successful', severity: 'healthy' },
-  { id: 'sim-5', type: 'ticket', title: 'Ticket TKT-8804 Resolved', description: 'Battery bank B replaced successfully.', severity: 'healthy' },
-];
+const markerIcon = (status: 'healthy' | 'warning' | 'critical') => L.divIcon({
+  className: '',
+  html: `<span style="display:block;width:18px;height:18px;border-radius:999px;background:${status === 'healthy' ? '#22C55E' : status === 'warning' ? '#F59E0B' : '#EF4444'};border:2px solid #0F1115;box-shadow:0 0 0 4px rgba(255,255,255,0.12)"></span>`,
+  iconSize: [18, 18],
+  iconAnchor: [9, 9]
+});
 
 const NationalOperationsDashboard = () => {
   const { data: metrics, isLoading } = useDashboardMetrics();
-  const [liveFeed, setLiveFeed] = useState<any[]>([]);
-
-  // Simulate real-time data stream
-  useEffect(() => {
-    if (metrics?.feed) {
-      setLiveFeed(metrics.feed); // Initialize with backend feed
-    }
-    
-    let index = 0;
-    const interval = setInterval(() => {
-      const newItem = { ...SIMULATED_FEED_DATA[index % SIMULATED_FEED_DATA.length], time: new Date().toISOString(), id: `sim-${Date.now()}` };
-      setLiveFeed((prev) => [newItem, ...prev].slice(0, 50)); // Keep last 50 items
-      index++;
-    }, 4000); // New item every 4 seconds
-
-    return () => clearInterval(interval);
-  }, [metrics?.feed]);
+  const liveFeed = metrics?.feed || [];
+  const sites = metrics?.sites || [];
+  const rankedSites = useMemo(() => [...sites].sort((a: any, b: any) => a.overallHealth - b.overallHealth), [sites]);
 
   return (
     <div className="space-y-6">
@@ -58,9 +41,10 @@ const NationalOperationsDashboard = () => {
         <KPICard title="Overall Health Score" value={isLoading ? '...' : `${metrics?.overallHealthScore}%`} trend="1.2%" trendUp={true} icon={<Activity className="w-5 h-5" />} />
         <KPICard title="Total Sites" value={isLoading ? '...' : metrics?.totalSites} icon={<MapPin className="w-5 h-5" />} />
         <KPICard title="Healthy Sites" value={isLoading ? '...' : metrics?.healthySites} icon={<ShieldCheck className="w-5 h-5 text-status-healthy" />} />
-        <KPICard title="Critical Sites" value={isLoading ? '...' : metrics?.criticalSites} trend="1 Site Fixed" trendUp={true} icon={<AlertTriangle className="w-5 h-5 text-status-critical" />} />
-        
-        <KPICard title="Open Tickets" value={isLoading ? '...' : metrics?.openTickets} trend="5 New Today" trendUp={false} icon={<Ticket className="w-5 h-5" />} />
+        <KPICard title="Warning Sites" value={isLoading ? '...' : metrics?.warningSites} icon={<AlertTriangle className="w-5 h-5 text-status-warning" />} />
+        <KPICard title="Critical Sites" value={isLoading ? '...' : metrics?.criticalSites} icon={<AlertTriangle className="w-5 h-5 text-status-critical" />} />
+        <KPICard title="Active Incidents" value={isLoading ? '...' : metrics?.activeIncidents} icon={<AlertTriangle className="w-5 h-5 text-status-critical" />} />
+        <KPICard title="Open Tickets" value={isLoading ? '...' : metrics?.openTickets} icon={<Ticket className="w-5 h-5" />} />
         <KPICard title="Pending Maintenance" value={isLoading ? '...' : metrics?.pendingMaintenance} icon={<Wrench className="w-5 h-5" />} />
         <KPICard title="Closed Tickets Today" value={isLoading ? '...' : metrics?.closedTicketsToday} icon={<CheckCircle className="w-5 h-5" />} />
       </div>
@@ -75,23 +59,25 @@ const NationalOperationsDashboard = () => {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               />
-              <Marker position={[36.4700, 2.8277]}>
-                <Popup>
-                  <strong>MSC10 Blida</strong><br />Health: 92.5%
-                </Popup>
-              </Marker>
-              <Marker position={[36.7538, 3.0588]}>
-                <Popup>
-                  <strong>MSC01 Algiers</strong><br />Health: 98.0%
-                </Popup>
-              </Marker>
+              {sites.filter((site: any) => site.latitude && site.longitude).map((site: any) => {
+                const status = statusForHealth(site.overallHealth);
+                return (
+                  <Marker key={site.id} position={[site.latitude, site.longitude]} icon={markerIcon(status)}>
+                    <Popup>
+                      <strong>{site.name}</strong><br />
+                      Health: {site.overallHealth}%<br />
+                      <a href={`/sites/${site.id}/digital-twin`}>Open Digital Twin</a>
+                    </Popup>
+                  </Marker>
+                );
+              })}
             </MapContainer>
           </div>
         </div>
 
         {/* Live Feed */}
         <div className="bg-bg-surface border border-border-subtle rounded-lg p-6 flex flex-col h-[500px]">
-          <h3 className="text-lg font-sans font-medium text-on-surface mb-4">Live Incident Feed (Simulated)</h3>
+          <h3 className="text-lg font-sans font-medium text-on-surface mb-4">Live Incident Feed</h3>
           <div className="flex-1 space-y-4 overflow-y-auto pr-2">
             {isLoading && liveFeed.length === 0 ? (
               <div className="text-on-surface-variant text-sm">Loading feed...</div>
@@ -109,6 +95,21 @@ const NationalOperationsDashboard = () => {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      <div className="bg-bg-surface border border-border-subtle rounded-lg p-6">
+        <h3 className="text-lg font-sans font-medium text-on-surface mb-4">Site Health Ranking</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {rankedSites.map((site: any) => (
+            <div key={site.id} className="bg-background border border-border-subtle rounded-md p-4 flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-medium text-on-surface">{site.name}</h4>
+                <p className="text-xs font-mono text-on-surface-variant">{site.location}</p>
+              </div>
+              <Badge status={statusForHealth(site.overallHealth)}>{site.overallHealth}%</Badge>
+            </div>
+          ))}
         </div>
       </div>
       

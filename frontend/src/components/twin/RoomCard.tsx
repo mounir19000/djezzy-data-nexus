@@ -7,12 +7,14 @@ interface RoomCardProps {
   status: 'healthy' | 'warning' | 'critical' | 'offline';
   temp: number;
   humidity: number;
+  healthScore?: number;
   tickets: number;
   alarms: number;
+  equipmentCount?: number;
   className?: string;
 }
 
-const RoomCard: React.FC<RoomCardProps> = ({ name, status, temp, humidity, tickets, alarms, className = '' }) => {
+const RoomCard: React.FC<RoomCardProps> = ({ name, status, temp, humidity, healthScore, tickets, alarms, equipmentCount = 0, className = '' }) => {
   const bgColors = {
     healthy: 'bg-bg-surface hover:border-status-healthy',
     warning: 'bg-status-warning/10 hover:border-status-warning',
@@ -23,7 +25,12 @@ const RoomCard: React.FC<RoomCardProps> = ({ name, status, temp, humidity, ticke
   return (
     <div className={`border border-border-subtle rounded-lg p-4 cursor-pointer transition-colors relative group overflow-hidden ${bgColors[status]} ${className}`}>
       <div className="flex justify-between items-start mb-4">
-        <h3 className="text-on-surface font-sans font-medium">{name}</h3>
+        <div>
+          <h3 className="text-on-surface font-sans font-medium">{name}</h3>
+          {healthScore !== undefined && (
+            <p className="text-xs font-mono text-on-surface-variant mt-1">Health {Math.round(healthScore)}%</p>
+          )}
+        </div>
         <Badge status={status}>{status.toUpperCase()}</Badge>
       </div>
 
@@ -48,6 +55,7 @@ const RoomCard: React.FC<RoomCardProps> = ({ name, status, temp, humidity, ticke
           <span className="text-xs font-mono text-on-surface-variant">{tickets} Tickets</span>
         </div>
       </div>
+      <div className="mt-2 text-xs font-mono text-on-surface-variant">{equipmentCount} Equipment</div>
     </div>
   );
 };

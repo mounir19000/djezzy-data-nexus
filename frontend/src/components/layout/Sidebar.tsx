@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Map, Activity, Calendar, FileText, Settings, ShieldAlert, Cpu, LogOut } from 'lucide-react';
+import { Map, Activity, Calendar, FileText, Settings, ShieldAlert, Cpu, LogOut } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useSites } from '../../hooks/useSites';
 
@@ -15,7 +15,7 @@ const Sidebar = () => {
   };
 
   const isSuperAdmin = user?.role === 'Super Admin';
-  const isEngineer = user?.role === 'Engineer';
+  const canManageMaintenance = isSuperAdmin || user?.role === 'Engineer';
   // Super Admins see all sites. Others might only see their assigned site, but for now we default to MSC10 Blida or dynamic list
   const displaySites = isSuperAdmin ? sites : sites?.filter((s: any) => s.id === 'msc10-blida');
 
@@ -50,18 +50,20 @@ const Sidebar = () => {
               <div className="text-xs font-mono text-on-surface-variant px-3 pt-6 py-2 uppercase tracking-wider">
                 {site.name}
               </div>
-              <NavLink to={`/twin?siteId=${site.id}`} className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
+              <NavLink to={`/sites/${site.id}/digital-twin`} className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
                 <Cpu className="w-5 h-5" />
                 <span>Digital Twin</span>
               </NavLink>
-              <NavLink to={`/power-flow?siteId=${site.id}`} className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
+              <NavLink to={`/sites/${site.id}/power-flow`} className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
                 <Activity className="w-5 h-5" />
                 <span>Power Flow</span>
               </NavLink>
-              <NavLink to={`/settings?siteId=${site.id}`} className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
-                <Settings className="w-5 h-5" />
-                <span>Site Settings</span>
-              </NavLink>
+              {isSuperAdmin && (
+                <NavLink to={`/sites/${site.id}/configuration`} className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
+                  <Settings className="w-5 h-5" />
+                  <span>Site Settings</span>
+                </NavLink>
+              )}
             </React.Fragment>
           ))
         )}
@@ -77,10 +79,12 @@ const Sidebar = () => {
           <FileText className="w-5 h-5" />
           <span>Ticket Kanban</span>
         </NavLink>
-        <NavLink to="/maintenance" className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
-          <Calendar className="w-5 h-5" />
-          <span>Maintenance</span>
-        </NavLink>
+        {canManageMaintenance && (
+          <NavLink to="/maintenance" className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
+            <Calendar className="w-5 h-5" />
+            <span>Maintenance</span>
+          </NavLink>
+        )}
         <NavLink to="/knowledge" className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
           <FileText className="w-5 h-5" />
           <span>Knowledge Center</span>
