@@ -68,6 +68,8 @@ function App() {
           <Route path="sites/:siteId/dashboard" element={<SiteDashboard />} />
           <Route path="sites/:siteId/digital-twin" element={<DigitalTwinDashboard />} />
           <Route path="sites/:siteId/power-flow" element={<PowerFlowView />} />
+          <Route path="sites/:siteId/tickets" element={<TicketKanban />} />
+          <Route path="sites/:siteId/reports" element={<Reports />} />
           <Route path="sites/:siteId/configuration" element={
             <RoleBoundary allowedRoles={['Super Admin']}>
               <SettingsPage />

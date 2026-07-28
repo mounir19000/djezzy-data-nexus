@@ -16,8 +16,8 @@ const Sidebar = () => {
 
   const isSuperAdmin = user?.role === 'Super Admin';
   const canManageMaintenance = isSuperAdmin || user?.role === 'Engineer';
-  // Super Admins see all sites. Others might only see their assigned site, but for now we default to MSC10 Blida or dynamic list
-  const displaySites = isSuperAdmin ? sites : sites?.filter((s: any) => s.id === 'msc10-blida');
+  const assignedSiteIds = user?.siteIds || ['msc10-blida'];
+  const displaySites = isSuperAdmin ? sites : sites?.filter((site: any) => assignedSiteIds.includes(site.id));
 
   return (
     <aside className="w-[280px] bg-bg-secondary border-r border-border-subtle h-screen flex flex-col fixed left-0 top-0">
@@ -62,6 +62,14 @@ const Sidebar = () => {
                 <Activity className="w-5 h-5" />
                 <span>Power Flow</span>
               </NavLink>
+              <NavLink to={`/sites/${site.id}/tickets`} className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
+                <FileText className="w-5 h-5" />
+                <span>Tickets</span>
+              </NavLink>
+              <NavLink to={`/sites/${site.id}/reports`} className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
+                <FileText className="w-5 h-5" />
+                <span>Ticket Reports</span>
+              </NavLink>
               {isSuperAdmin && (
                 <NavLink to={`/sites/${site.id}/configuration`} className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
                   <Settings className="w-5 h-5" />
@@ -79,10 +87,12 @@ const Sidebar = () => {
           <ShieldAlert className="w-5 h-5" />
           <span>Incident Center</span>
         </NavLink>
-        <NavLink to="/tickets" className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
-          <FileText className="w-5 h-5" />
-          <span>Ticket Kanban</span>
-        </NavLink>
+        {isSuperAdmin && (
+          <NavLink to="/tickets" className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
+            <FileText className="w-5 h-5" />
+            <span>All Tickets</span>
+          </NavLink>
+        )}
         {canManageMaintenance && (
           <NavLink to="/maintenance" className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
             <Calendar className="w-5 h-5" />
@@ -93,10 +103,12 @@ const Sidebar = () => {
           <FileText className="w-5 h-5" />
           <span>Knowledge Center</span>
         </NavLink>
-        <NavLink to="/reports" className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
-          <FileText className="w-5 h-5" />
-          <span>Reports</span>
-        </NavLink>
+        {isSuperAdmin && (
+          <NavLink to="/reports" className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
+            <FileText className="w-5 h-5" />
+            <span>All Reports</span>
+          </NavLink>
+        )}
       </nav>
       
       <div className="p-4 border-t border-border-subtle flex flex-col gap-1 shrink-0">

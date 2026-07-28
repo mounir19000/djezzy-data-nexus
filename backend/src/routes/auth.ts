@@ -12,7 +12,10 @@ router.post('/login', async (req: Request, res: Response) => {
   try {
     const user = await prisma.user.findUnique({
       where: { email },
-      include: { role: true }
+      include: {
+        role: true,
+        siteAssignments: { select: { siteId: true } }
+      }
     });
 
     if (!user) {
@@ -42,7 +45,8 @@ router.post('/login', async (req: Request, res: Response) => {
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
-          role: user.role.name
+          role: user.role.name,
+          siteIds: user.siteAssignments.map((assignment: any) => assignment.siteId)
         }
       }
     });
@@ -57,7 +61,10 @@ router.get('/me', requireAuth, async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: { role: true }
+      include: {
+        role: true,
+        siteAssignments: { select: { siteId: true } }
+      }
     });
 
     if (!user) {
@@ -70,7 +77,8 @@ router.get('/me', requireAuth, async (req: AuthRequest, res: Response) => {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        role: user.role.name
+        role: user.role.name,
+        siteIds: user.siteAssignments.map((assignment: any) => assignment.siteId)
       }
     });
   } catch (error) {

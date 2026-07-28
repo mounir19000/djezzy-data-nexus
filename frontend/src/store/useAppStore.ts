@@ -6,6 +6,7 @@ interface UserProfile {
   firstName: string;
   lastName: string;
   role: string;
+  siteIds?: string[];
 }
 
 interface AppState {
