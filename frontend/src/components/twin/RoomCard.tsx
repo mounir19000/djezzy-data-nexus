@@ -11,9 +11,11 @@ interface RoomCardProps {
   alarms: number;
   equipmentCount?: number;
   className?: string;
+  onClick?: () => void;
+  selected?: boolean;
 }
 
-const RoomCard: React.FC<RoomCardProps> = ({ name, status, temp, healthScore, tickets, alarms, equipmentCount = 0, className = '' }) => {
+const RoomCard: React.FC<RoomCardProps> = ({ name, status, temp, healthScore, tickets, alarms, equipmentCount = 0, className = '', onClick, selected }) => {
   const bgColors = {
     healthy: 'bg-bg-surface hover:border-status-healthy',
     warning: 'bg-status-warning/10 hover:border-status-warning',
@@ -22,7 +24,10 @@ const RoomCard: React.FC<RoomCardProps> = ({ name, status, temp, healthScore, ti
   };
 
   return (
-    <div className={`border border-border-subtle rounded-lg p-4 cursor-pointer transition-colors relative group overflow-hidden ${bgColors[status]} ${className}`}>
+    <div 
+      onClick={onClick}
+      className={`border ${selected ? 'border-primary-main ring-1 ring-primary-main' : 'border-border-subtle'} rounded-lg p-4 cursor-pointer transition-colors relative group overflow-hidden ${bgColors[status]} ${className}`}
+    >
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="text-on-surface font-sans font-medium">{name}</h3>

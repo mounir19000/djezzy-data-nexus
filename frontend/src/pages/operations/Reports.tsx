@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { AlertCircle, CheckCircle, FileText, User, Search, Filter } from 'lucide-react';
+import { AlertCircle, CheckCircle, FileText, User, Search } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
 import { useTickets } from '../../hooks/useTickets';
 import { useSites } from '../../hooks/useSites';

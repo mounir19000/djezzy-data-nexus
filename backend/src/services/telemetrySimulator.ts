@@ -2,7 +2,6 @@ import fs from 'fs';
 import path from 'path';
 import { Server } from 'socket.io';
 import { prisma } from '../config/prisma';
-import { createAutomaticTicketForAlarm } from './ticketWorkflow';
 
 type SimulationRow = Record<string, string>;
 
@@ -335,7 +334,6 @@ const applyAlarmTransitions = async (
 
     io.emit('alarm_update', { type: 'created', alarm });
     await notifyAlarmRecipients(alarm, transition.equipment, io);
-    await createAutomaticTicketForAlarm(alarm, transition.equipment, io);
   }
 };
 

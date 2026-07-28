@@ -107,6 +107,31 @@ export const useSubmitTicketReport = () => {
   });
 };
 
+export const useDeleteTicket = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const token = localStorage.getItem('djezzy_token');
+      const res = await fetch(`http://localhost:4000/api/tickets/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        const message = typeof body?.error === 'string' ? body.error : body?.error?.message || 'Failed to delete ticket';
+        throw new Error(message);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['incidents'] });
+      queryClient.invalidateQueries({ queryKey: ['sites'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['site-dashboard'] });
+    }
+  });
+};
+
 export const useCreateTicket = () => {
   const queryClient = useQueryClient();
   return useMutation({
