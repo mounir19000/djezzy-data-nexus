@@ -1,6 +1,5 @@
-import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Activity, AlertTriangle, BatteryCharging, CheckCircle, ChevronDown, Server, ThermometerSun, Zap } from 'lucide-react';
+import { AlertTriangle, CheckCircle } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
 import { useSiteDashboard } from '../../hooks/useSites';
 
@@ -42,30 +41,9 @@ const statusLabel = {
 
 const uniqueItems = (items: string[]) => [...new Set(items.filter(Boolean))];
 
-const causesFor = (component: any) => {
-  const causes = uniqueItems(component.causes || []);
-  return causes.length > 0 ? causes : ['No active causes detected.'];
-};
-
-const iconForComponent = (component: any) => {
-  const name = `${component.name} ${component.type}`.toLowerCase();
-
-  if (name.includes('ups')) return Zap;
-  if (name.includes('battery')) return BatteryCharging;
-  if (name.includes('switch') || name.includes('vsat') || name.includes('enr')) return Server;
-  if (name.includes('room')) return ThermometerSun;
-
-  return Activity;
-};
-
 const SiteDashboard = () => {
   const { siteId } = useParams();
   const { data, isLoading, isError } = useSiteDashboard(siteId);
-  const [expandedComponentId, setExpandedComponentId] = useState<string | null>(null);
-
-  const sortedComponents = useMemo(() => {
-    return [...(data?.health?.components || [])].sort((a: any, b: any) => a.score - b.score);
-  }, [data?.health?.components]);
 
   if (isLoading) {
     return (
@@ -89,7 +67,7 @@ const SiteDashboard = () => {
     );
   }
 
-  const { site, health, summary, alarms } = data;
+  const { site, health, summary, alarms, tickets, maintenance } = data;
   const healthStatus = statusForScore(health.score);
   const healthTone = toneForStatus[healthStatus];
   const healthCauses = uniqueItems(health.causes || []);
@@ -169,81 +147,68 @@ const SiteDashboard = () => {
       </section>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div className="bg-bg-surface border border-border-subtle rounded-lg p-6 xl:col-span-2">
-          <div className="flex items-center justify-between gap-4 mb-5">
+        {/* Open Tickets */}
+        <div className="bg-bg-surface border border-border-subtle rounded-lg p-6 flex flex-col">
+          <div className="flex items-center justify-between mb-5">
             <div>
-              <h3 className="text-lg font-sans font-medium text-on-surface">Health Scores</h3>
-              <p className="text-sm text-on-surface-variant mt-1">Scores and active causes by component.</p>
+              <h3 className="text-lg font-sans font-medium text-on-surface">Open Tickets</h3>
+              <p className="text-sm text-on-surface-variant mt-1">Recent active tickets.</p>
             </div>
+            <Link to={`/incidents?siteId=${site.id}`} className="text-xs text-primary hover:underline">View All</Link>
           </div>
-          {sortedComponents.length === 0 ? (
-            <div className="text-sm text-on-surface-variant bg-background border border-border-subtle rounded-md p-4">
-              No room or UPS model has been configured for this site yet.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {sortedComponents.map((component: any) => {
-                const expanded = expandedComponentId === component.id;
-                const componentStatus = statusForScore(component.score);
-                const componentTone = toneForStatus[componentStatus];
-                const Icon = iconForComponent(component);
-                const causes = causesFor(component);
-
-                return (
-                  <div key={component.id} className={`bg-background border rounded-lg overflow-hidden transition-colors ${expanded ? componentTone.border : 'border-border-subtle'}`}>
-                    <button
-                      type="button"
-                      className="w-full text-left p-4 hover:bg-bg-surface/60 transition-colors"
-                      aria-expanded={expanded}
-                      onClick={() => setExpandedComponentId(expanded ? null : component.id)}
-                    >
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="min-w-0 flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-md ${componentTone.bg} ${componentTone.text} border ${componentTone.border} grid place-items-center shrink-0`}>
-                            <Icon className="w-5 h-5" />
-                          </div>
-                          <div className="min-w-0">
-                            <h4 className="text-sm font-medium text-on-surface truncate">{component.name}</h4>
-                            <p className="text-xs text-on-surface-variant mt-1 truncate">{component.summary || causes[0]}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          <div className="text-right">
-                            <div className="text-xl font-display font-bold text-on-surface">{component.score}%</div>
-                            <div className={`text-[11px] font-mono ${componentTone.text}`}>{statusLabel[componentStatus]}</div>
-                          </div>
-                          <ChevronDown className={`w-4 h-4 text-on-surface-variant transition-transform ${expanded ? 'rotate-180' : ''}`} />
-                        </div>
-                      </div>
-                      <div className="mt-4 h-1.5 bg-bg-surface rounded-full overflow-hidden">
-                        <div
-                          className={`h-full ${componentTone.bar}`}
-                          style={{ width: `${Math.max(4, component.score)}%` }}
-                        />
-                      </div>
-                    </button>
-
-                    {expanded && (
-                      <div className="border-t border-border-subtle px-4 py-4">
-                        <p className="text-xs uppercase text-on-surface-variant font-mono">Causes</p>
-                        <div className="mt-3 space-y-2">
-                          {causes.map((cause) => (
-                            <div key={cause} className="flex items-start gap-2 text-sm text-on-surface">
-                              <span className={`w-1.5 h-1.5 rounded-full mt-2 ${componentTone.bar}`} />
-                              <span>{cause}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+          <div className="space-y-3 flex-1">
+            {tickets.filter((t: any) => !['resolved', 'closed'].includes(t.status)).slice(0, 5).length === 0 ? (
+              <div className="bg-background border border-border-subtle rounded-md p-4 text-sm text-on-surface-variant flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-status-healthy" /> No open tickets.
+              </div>
+            ) : tickets.filter((t: any) => !['resolved', 'closed'].includes(t.status)).slice(0, 5).map((ticket: any) => (
+              <div key={ticket.id} className="bg-background border border-border-subtle rounded-md p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h4 className="text-sm font-medium text-on-surface truncate">{ticket.title}</h4>
+                    <p className="text-xs text-on-surface-variant mt-1 truncate">
+                      {ticket.equipment?.name} / {ticket.equipment?.room?.name}
+                    </p>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                  <Badge status={ticket.priority === 'high' ? 'critical' : ticket.priority === 'medium' ? 'warning' : 'healthy'}>{ticket.status}</Badge>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div className="bg-bg-surface border border-border-subtle rounded-lg p-6">
+        {/* Maintenance */}
+        <div className="bg-bg-surface border border-border-subtle rounded-lg p-6 flex flex-col">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h3 className="text-lg font-sans font-medium text-on-surface">Maintenance</h3>
+              <p className="text-sm text-on-surface-variant mt-1">Upcoming scheduled tasks.</p>
+            </div>
+            <Link to={`/operations?siteId=${site.id}`} className="text-xs text-primary hover:underline">Calendar</Link>
+          </div>
+          <div className="space-y-3 flex-1">
+            {maintenance.filter((m: any) => m.status !== 'completed').slice(0, 5).length === 0 ? (
+              <div className="bg-background border border-border-subtle rounded-md p-4 text-sm text-on-surface-variant flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-status-healthy" /> No upcoming maintenance.
+              </div>
+            ) : maintenance.filter((m: any) => m.status !== 'completed').slice(0, 5).map((task: any) => (
+              <div key={task.id} className="bg-background border border-border-subtle rounded-md p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h4 className="text-sm font-medium text-on-surface truncate">{task.title}</h4>
+                    <p className="text-xs text-on-surface-variant mt-1 truncate">
+                      {new Date(task.scheduledDate).toLocaleDateString()} • {task.equipment?.name}
+                    </p>
+                  </div>
+                  <Badge status="healthy">{task.status}</Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Alarms */}
+        <div className="bg-bg-surface border border-border-subtle rounded-lg p-6 flex flex-col">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h3 className="text-lg font-sans font-medium text-on-surface">Alarms</h3>
@@ -251,16 +216,16 @@ const SiteDashboard = () => {
             </div>
             <Link to={`/incidents?siteId=${site.id}`} className="text-xs text-primary hover:underline">Incident Center</Link>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-3 flex-1">
             {alarms.length === 0 ? (
               <div className="bg-background border border-border-subtle rounded-md p-4 text-sm text-on-surface-variant flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-status-healthy" /> No active alarms.
               </div>
-            ) : alarms.map((alarm: any) => (
+            ) : alarms.slice(0, 5).map((alarm: any) => (
               <div key={alarm.id} className="bg-background border border-border-subtle rounded-md p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <h4 className="text-sm font-medium text-on-surface">{alarm.description}</h4>
+                    <h4 className="text-sm font-medium text-on-surface truncate">{alarm.description}</h4>
                     <p className="text-xs text-on-surface-variant mt-1 truncate">{alarm.equipment?.name} / {alarm.equipment?.room?.name}</p>
                   </div>
                   <Badge status={alarm.severity}>{alarm.severity.toUpperCase()}</Badge>

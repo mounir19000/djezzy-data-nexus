@@ -19,7 +19,7 @@ const calculateRoomHealth = (temperature: number, threshold: number) => {
   return Math.max(0, 70 - ((temperature - threshold) / (threshold * 0.1)) * 70);
 };
 
-const statusFromHealth = (healthScore: number, activeAlarms: number): 'healthy' | 'warning' | 'critical' | 'offline' => {
+const statusFromHealth = (healthScore: number, activeAlarms: number): 'healthy' | 'warning' | 'critical' => {
   if (activeAlarms > 0 && healthScore < 80) return 'critical';
   if (healthScore < 70) return 'critical';
   if (healthScore < 90 || activeAlarms > 0) return 'warning';
@@ -36,8 +36,12 @@ const DigitalTwinDashboard = () => {
 
   const siteName = currentSite?.name || 'MSC10 Blida';
   const roomSummaries = useMemo(() => {
-    return (currentSite?.rooms || [])
-      .filter((room: any) => room.equipments && room.equipments.length > 0)
+    const summaries = (currentSite?.rooms || [])
+      .filter((room: any) => 
+        room.equipments && 
+        room.equipments.length > 0 && 
+        !room.name.toLowerCase().includes('electrical')
+      )
       .map((room: any) => {
         const equipment = room.equipments || [];
         const isUPSRoom = room.name.toLowerCase().includes('ups');
@@ -51,8 +55,7 @@ const DigitalTwinDashboard = () => {
           : actualTargetTemp * 0.92;
         const activeAlarms = equipment.reduce((sum: number, item: any) => sum + (item.alarms?.length || 0), 0);
         const openTickets = equipment.reduce((sum: number, item: any) => sum + (item.tickets?.length || 0), 0);
-        const hasOfflineEquipment = equipment.some((item: any) => item.status === 'offline');
-        const healthScore = hasOfflineEquipment ? 65 : calculateRoomHealth(temperature, actualTargetTemp);
+        const healthScore = calculateRoomHealth(temperature, actualTargetTemp);
 
         return {
           ...room,
@@ -62,13 +65,16 @@ const DigitalTwinDashboard = () => {
           activeAlarms,
           openTickets,
           equipmentCount: equipment.length,
-          status: hasOfflineEquipment ? 'offline' : statusFromHealth(healthScore, activeAlarms)
+          status: statusFromHealth(healthScore, activeAlarms)
         };
       }) || [];
+      
+    // Order them with the one that has the worst score first
+    return summaries.sort((a: any, b: any) => a.healthScore - b.healthScore);
   }, [currentSite, equipmentData]);
 
   const criticalRooms = roomSummaries.filter((room: any) => room.status === 'critical').length;
-  const warningRooms = roomSummaries.filter((room: any) => room.status === 'warning' || room.status === 'offline').length;
+  const warningRooms = roomSummaries.filter((room: any) => room.status === 'warning').length;
 
   if (isLoading) {
     return (
