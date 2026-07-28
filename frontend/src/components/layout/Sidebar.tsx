@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Map, Activity, Calendar, FileText, Settings, ShieldAlert, Cpu, LogOut } from 'lucide-react';
+import { Map, Activity, Calendar, FileText, Settings, ShieldAlert, Cpu, LogOut, Gauge } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useSites } from '../../hooks/useSites';
 
@@ -50,6 +50,10 @@ const Sidebar = () => {
               <div className="text-xs font-mono text-on-surface-variant px-3 pt-6 py-2 uppercase tracking-wider">
                 {site.name}
               </div>
+              <NavLink to={`/sites/${site.id}/dashboard`} className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
+                <Gauge className="w-5 h-5" />
+                <span>Site Dashboard</span>
+              </NavLink>
               <NavLink to={`/sites/${site.id}/digital-twin`} className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
                 <Cpu className="w-5 h-5" />
                 <span>Digital Twin</span>

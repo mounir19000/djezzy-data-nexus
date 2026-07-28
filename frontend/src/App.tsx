@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, useSearchParams } from 'react-r
 import MainLayout from './components/layout/MainLayout';
 import NationalOperationsDashboard from './pages/national/NationalOperationsDashboard';
 import NationalAnalyticsDashboard from './pages/national/NationalAnalyticsDashboard';
+import SiteDashboard from './pages/sites/SiteDashboard';
 import DigitalTwinDashboard from './pages/twin/DigitalTwinDashboard';
 import PowerFlowView from './pages/twin/PowerFlowView';
 import IncidentDiagnosisCenter from './pages/operations/IncidentDiagnosisCenter';
@@ -17,7 +18,7 @@ import { useAppStore } from './store/useAppStore';
 const RoleHome = () => {
   const user = useAppStore((state) => state.user);
 
-  if (user?.role === 'Engineer') return <Navigate to="/sites/msc10-blida/digital-twin" replace />;
+  if (user?.role === 'Engineer') return <Navigate to="/sites/msc10-blida/dashboard" replace />;
   if (user?.role === 'Site Operator') return <Navigate to="/incidents?siteId=msc10-blida" replace />;
 
   return <NationalOperationsDashboard />;
@@ -61,7 +62,8 @@ function App() {
               <NationalAnalyticsDashboard />
             </RoleBoundary>
           } />
-          <Route path="sites/:siteId" element={<Navigate to="digital-twin" replace />} />
+          <Route path="sites/:siteId" element={<Navigate to="dashboard" replace />} />
+          <Route path="sites/:siteId/dashboard" element={<SiteDashboard />} />
           <Route path="sites/:siteId/digital-twin" element={<DigitalTwinDashboard />} />
           <Route path="sites/:siteId/power-flow" element={<PowerFlowView />} />
           <Route path="sites/:siteId/configuration" element={
