@@ -1,11 +1,19 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import RoomCard from '../../components/twin/RoomCard';
 import Badge from '../../components/ui/Badge';
 import { useTelemetryStore } from '../../store/useTelemetryStore';
+import { useSites } from '../../hooks/useSites';
 
 const DigitalTwinDashboard = () => {
   const [activeTab, setActiveTab] = useState<'physical' | 'power'>('physical');
+  const [searchParams] = useSearchParams();
+  const siteId = searchParams.get('siteId');
+  const { data: sites } = useSites();
   const equipmentData = useTelemetryStore(state => state.equipmentData);
+
+  const currentSite = siteId ? sites?.find((s: any) => s.id === siteId) : null;
+  const siteName = currentSite?.name || (siteId ? 'Loading...' : 'MSC10 Blida');
 
   // Helper to extract metrics safely
   const getMetrics = (eqName: string) => {
@@ -26,7 +34,7 @@ const DigitalTwinDashboard = () => {
     <div className="space-y-6 h-full flex flex-col">
       <header className="flex justify-between items-end">
         <div>
-          <h2 className="text-3xl font-display font-bold text-on-surface">MSC10 Blida Digital Twin</h2>
+          <h2 className="text-3xl font-display font-bold text-on-surface">{siteName} Digital Twin</h2>
           <p className="text-on-surface-variant font-sans mt-1">Interactive facility model and live telemetry.</p>
         </div>
         <div className="flex bg-bg-surface border border-border-subtle rounded-lg p-1">
