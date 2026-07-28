@@ -6,11 +6,14 @@ async function main() {
   // Find a few pieces of equipment
   const equipments = await prisma.equipment.findMany({ take: 3 });
   
-  if (admin && equipments.length >= 3) {
+  if (admin && equipments.length > 0) {
+    // We will just cycle through available equipment if there are less than 3
+    const getEq = (index: number) => equipments[index % equipments.length].id;
+
     // Create Alarms
     const alarm1 = await prisma.alarm.create({
       data: {
-        equipmentId: equipments[0].id,
+        equipmentId: getEq(0),
         severity: 'critical',
         description: 'Synchronization Failure Detected',
         active: true
@@ -19,7 +22,7 @@ async function main() {
 
     const alarm2 = await prisma.alarm.create({
       data: {
-        equipmentId: equipments[1].id,
+        equipmentId: getEq(1),
         severity: 'warning',
         description: 'Return Air Temp High',
         active: true
@@ -28,7 +31,7 @@ async function main() {
 
     const alarm3 = await prisma.alarm.create({
       data: {
-        equipmentId: equipments[2].id,
+        equipmentId: getEq(2),
         severity: 'warning',
         description: 'Voltage Sag Detected',
         active: true
@@ -39,7 +42,7 @@ async function main() {
     await prisma.ticket.create({
       data: {
         title: 'Check Sync Board',
-        equipmentId: equipments[0].id,
+        equipmentId: getEq(0),
         alarmId: alarm1.id,
         status: 'assigned',
         priority: 'high',
@@ -50,7 +53,7 @@ async function main() {
     await prisma.ticket.create({
       data: {
         title: 'Replace Filter',
-        equipmentId: equipments[1].id,
+        equipmentId: getEq(1),
         alarmId: alarm2.id,
         status: 'inProgress',
         priority: 'medium',
@@ -61,7 +64,7 @@ async function main() {
     await prisma.ticket.create({
       data: {
         title: 'Investigate Grid Log',
-        equipmentId: equipments[2].id,
+        equipmentId: getEq(2),
         alarmId: alarm3.id,
         status: 'resolved',
         priority: 'low',
@@ -73,7 +76,7 @@ async function main() {
     await prisma.ticket.create({
       data: {
         title: 'Routine Maintenance',
-        equipmentId: equipments[0].id,
+        equipmentId: getEq(0),
         status: 'pending',
         priority: 'low',
       }
