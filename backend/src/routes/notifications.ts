@@ -7,10 +7,12 @@ const router = Router();
 router.get('/', requireAuth, async (req: any, res: any) => {
   const authReq = req as AuthRequest;
   try {
+    const limit = Number(req.query.limit);
+    const take = Number.isFinite(limit) && limit > 0 ? Math.min(Math.floor(limit), 100) : undefined;
     const notifications = await prisma.notification.findMany({
       where: { userId: authReq.user!.id },
       orderBy: { createdAt: 'desc' },
-      take: 20
+      ...(take ? { take } : {})
     });
     res.json(notifications);
   } catch (error) {
@@ -29,6 +31,9 @@ router.put('/:id/read', requireAuth, async (req: any, res: any) => {
       },
       data: { read: true }
     });
+    if (notification.count === 0) {
+      return res.status(404).json({ error: 'Notification not found' });
+    }
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update notification' });
@@ -39,14 +44,14 @@ router.put('/:id/read', requireAuth, async (req: any, res: any) => {
 router.put('/read-all', requireAuth, async (req: any, res: any) => {
   const authReq = req as AuthRequest;
   try {
-    await prisma.notification.updateMany({
+    const result = await prisma.notification.updateMany({
       where: { 
         userId: authReq.user!.id,
         read: false
       },
       data: { read: true }
     });
-    res.json({ success: true });
+    res.json({ success: true, updated: result.count });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update notifications' });
   }

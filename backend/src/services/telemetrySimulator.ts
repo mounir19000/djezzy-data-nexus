@@ -17,13 +17,15 @@ interface SimEquipment {
   } | null;
 }
 
-interface AlarmEvent {
+interface AlarmTransition {
   equipment: SimEquipment;
-  severity: 'warning' | 'critical';
+  state: 'A' | 'D';
+  severity?: 'warning' | 'critical';
   description: string;
+  key: string;
 }
 
-const CSV_FILE = 'blida_simulated_1week.csv';
+const CSV_FILE = 'blida_simulated_34h.csv';
 const SIMULATION_INTERVAL_MS = Number(process.env.TELEMETRY_SIMULATION_INTERVAL_MS || 5000);
 const phases = ['L1', 'L2', 'L3'] as const;
 
@@ -31,6 +33,7 @@ const roundMetric = (value: number) => Math.round(value * 100) / 100;
 const normalize = (value: string) => value.replace(/\\/g, ' ').replace(/\s+/g, ' ').trim();
 const normalizeKey = (value: string) => normalize(value)
   .replace(/^(ups log|clim log|scada):\s*/i, '')
+  .replace(/^\[(a|d|q)\]\s*/i, '')
   .replace(/^(warning|critical|information):\s*/i, '')
   .replace(/\s+has been restored$/i, '')
   .toLowerCase();
@@ -119,11 +122,6 @@ const isRelevantScadaEntry = (rawEntry: string) => {
   return !hasExplicitSite || lower.includes('blida msc 10');
 };
 
-const isRestorationEntry = (entry: string) => {
-  const lower = entry.toLowerCase();
-  return lower.includes('has been restored') || lower.includes('load protected by inverter') || lower.includes('alarm reset');
-};
-
 const severityForAlarm = (description: string): 'warning' | 'critical' | null => {
   const lower = description.toLowerCase();
 
@@ -187,7 +185,20 @@ const sourceLabel = (source: string) => {
   return 'SCADA';
 };
 
-const alarmEventsFromRow = (
+const alarmStateFromEntry = (rawEntry: string) => {
+  const match = rawEntry.trim().match(/^\[([ADQ])\]\s*(.+)$/i);
+  if (!match) return null;
+
+  const state = match[1].toUpperCase();
+  if (state !== 'A' && state !== 'D') return null;
+
+  return {
+    state: state as 'A' | 'D',
+    description: match[2].trim()
+  };
+};
+
+const alarmTransitionsFromRow = (
   row: SimulationRow,
   equipment: {
     ups?: SimEquipment;
@@ -196,42 +207,41 @@ const alarmEventsFromRow = (
   }
 ) => {
   const alarmColumns = ['DS3_UPS_Alarm', 'DS3_Clim_Alarm', 'DS2_SCADA_Alarm'];
-  const events: AlarmEvent[] = [];
-  const restorations: Array<{ equipment: SimEquipment; key: string }> = [];
+  const transitions: AlarmTransition[] = [];
   const seen = new Set<string>();
 
   for (const source of alarmColumns) {
     for (const rawEntry of splitAlarmEntries(row[source] || '')) {
       if (source === 'DS2_SCADA_Alarm' && !isRelevantScadaEntry(rawEntry)) continue;
 
-      const cleaned = normalize(rawEntry);
+      const alarmState = alarmStateFromEntry(rawEntry);
+      if (!alarmState) continue;
+
+      const cleaned = normalize(alarmState.description);
       const description = cleaned.replace(/^(Warning|Critical|Information):\s*/i, '').trim();
       const targetEquipment = equipmentForAlarm(description, source, equipment);
       if (!targetEquipment) continue;
 
-      if (isRestorationEntry(description)) {
-        restorations.push({ equipment: targetEquipment, key: normalizeKey(description) });
-        continue;
-      }
-
       const severity = severityForAlarm(description);
-      if (!severity) continue;
+      if (alarmState.state === 'A' && !severity) continue;
 
-      const event = {
+      const transition = {
         equipment: targetEquipment,
-        severity,
-        description: `${sourceLabel(source)}: ${description}`
+        state: alarmState.state,
+        severity: severity || undefined,
+        description: `${sourceLabel(source)}: ${description}`,
+        key: normalizeKey(description)
       };
-      const key = `${event.equipment.id}:${normalizeKey(event.description)}`;
+      const dedupeKey = `${transition.state}:${transition.equipment.id}:${transition.key}`;
 
-      if (!seen.has(key)) {
-        seen.add(key);
-        events.push(event);
+      if (!seen.has(dedupeKey)) {
+        seen.add(dedupeKey);
+        transitions.push(transition);
       }
     }
   }
 
-  return { events, restorations };
+  return transitions;
 };
 
 const notifyAlarmRecipients = async (
@@ -266,38 +276,47 @@ const notifyAlarmRecipients = async (
   }
 };
 
-const applyAlarmEvents = async (
-  events: AlarmEvent[],
-  restorations: Array<{ equipment: SimEquipment; key: string }>,
+const clearActiveAlarm = async (
+  transition: AlarmTransition,
+  clearedAt: Date,
   io: Server
 ) => {
-  for (const restoration of restorations) {
-    const activeAlarms = await prisma.alarm.findMany({
-      where: {
-        equipmentId: restoration.equipment.id,
-        active: true
-      },
-      select: { id: true, description: true }
+  const activeAlarms = await prisma.alarm.findMany({
+    where: {
+      equipmentId: transition.equipment.id,
+      active: true
+    },
+    select: { id: true, description: true }
+  });
+  const alarmIds = activeAlarms
+    .filter((alarm) => normalizeKey(alarm.description).includes(transition.key) || transition.key.includes(normalizeKey(alarm.description)))
+    .map((alarm) => alarm.id);
+
+  if (alarmIds.length > 0) {
+    await prisma.alarm.updateMany({
+      where: { id: { in: alarmIds } },
+      data: { active: false, clearedAt }
     });
-    const alarmIds = activeAlarms
-      .filter((alarm) => normalizeKey(alarm.description).includes(restoration.key) || restoration.key.includes(normalizeKey(alarm.description)))
-      .map((alarm) => alarm.id);
-
-    if (alarmIds.length > 0) {
-      await prisma.alarm.updateMany({
-        where: { id: { in: alarmIds } },
-        data: { active: false }
-      });
-      io.emit('alarm_update', { type: 'restored', alarmIds });
-    }
+    io.emit('alarm_update', { type: 'cleared', alarmIds, clearedAt });
   }
+};
 
-  for (const event of events) {
+const applyAlarmTransitions = async (
+  transitions: AlarmTransition[],
+  timestamp: Date,
+  io: Server
+) => {
+  for (const transition of transitions) {
+    if (transition.state === 'D') {
+      await clearActiveAlarm(transition, timestamp, io);
+      continue;
+    }
+
     const existing = await prisma.alarm.findFirst({
       where: {
-        equipmentId: event.equipment.id,
+        equipmentId: transition.equipment.id,
         active: true,
-        description: event.description
+        description: transition.description
       }
     });
 
@@ -305,16 +324,18 @@ const applyAlarmEvents = async (
 
     const alarm = await prisma.alarm.create({
       data: {
-        equipmentId: event.equipment.id,
-        severity: event.severity,
-        description: event.description,
-        active: true
+        equipmentId: transition.equipment.id,
+        severity: transition.severity!,
+        description: transition.description,
+        active: true,
+        createdAt: timestamp,
+        clearedAt: null
       }
     });
 
     io.emit('alarm_update', { type: 'created', alarm });
-    await notifyAlarmRecipients(alarm, event.equipment, io);
-    await createAutomaticTicketForAlarm(alarm, event.equipment, io);
+    await notifyAlarmRecipients(alarm, transition.equipment, io);
+    await createAutomaticTicketForAlarm(alarm, transition.equipment, io);
   }
 };
 
@@ -430,8 +451,8 @@ export const startTelemetrySimulation = (io: Server) => {
         });
       }
 
-      const { events, restorations } = alarmEventsFromRow(row, { ups, ats, cooling });
-      await applyAlarmEvents(events, restorations, io);
+      const transitions = alarmTransitionsFromRow(row, { ups, ats, cooling });
+      await applyAlarmTransitions(transitions, timestamp, io);
     } catch (error) {
       console.error('Telemetry Simulation Error:', error);
     }
