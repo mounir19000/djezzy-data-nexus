@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import Badge from '../../components/ui/Badge';
-import { User, Clock } from 'lucide-react';
+import { User, Clock, X } from 'lucide-react';
 import { useTickets, useUpdateTicketStatus } from '../../hooks/useTickets';
+import { useSites } from '../../hooks/useSites';
 
 const TicketCard = ({ ticket, onDragStart }: { ticket: any, onDragStart: (e: any, id: string) => void }) => (
   <div 
@@ -63,6 +64,8 @@ const KanbanColumn = ({ title, status, tickets, count, onDrop }: { title: string
 const TicketKanban = () => {
   const { data: tickets, isLoading } = useTickets();
   const { mutate: updateStatus } = useUpdateTicketStatus();
+  const { data: sites } = useSites();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const groupedTickets = useMemo(() => {
     if (!tickets) return { pending: [], assigned: [], inProgress: [], resolved: [] };
@@ -78,16 +81,25 @@ const TicketKanban = () => {
     updateStatus({ id: ticketId, status });
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Create ticket mutation would go here
+    setIsModalOpen(false);
+  };
+
   if (isLoading) return <div className="p-8 text-on-surface">Loading kanban...</div>;
 
   return (
-    <div className="h-full flex flex-col space-y-6">
+    <div className="h-full flex flex-col space-y-6 relative">
       <header className="flex justify-between items-end">
         <div>
           <h2 className="text-3xl font-display font-bold text-on-surface">Incident Tickets</h2>
           <p className="text-on-surface-variant font-sans mt-1">Operational Kanban board for active interventions.</p>
         </div>
-        <button className="bg-primary text-on-primary px-4 py-2 rounded-md font-sans font-medium hover:bg-primary-fixed-dim transition-colors">
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="bg-primary text-on-primary px-4 py-2 rounded-md font-sans font-medium hover:bg-primary-fixed-dim transition-colors"
+        >
           + New Ticket
         </button>
       </header>
@@ -98,6 +110,68 @@ const TicketKanban = () => {
         <KanbanColumn title="In Progress" status="inProgress" tickets={groupedTickets.inProgress} count={groupedTickets.inProgress.length} onDrop={handleDrop} />
         <KanbanColumn title="Resolved" status="resolved" tickets={groupedTickets.resolved} count={groupedTickets.resolved.length} onDrop={handleDrop} />
       </div>
+
+      {/* Create Ticket Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-bg-surface border border-border-subtle rounded-lg w-full max-w-lg shadow-xl flex flex-col">
+            <div className="flex justify-between items-center p-4 border-b border-border-subtle">
+              <h3 className="text-lg font-sans font-medium text-on-surface">Create New Ticket</h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-on-surface-variant hover:text-on-surface">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-on-surface mb-1">Title</label>
+                <input required type="text" className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface focus:outline-none focus:border-primary" placeholder="Ticket title" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-on-surface mb-1">Description</label>
+                <textarea rows={3} className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface focus:outline-none focus:border-primary" placeholder="Detailed description of the issue..."></textarea>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-on-surface mb-1">Site</label>
+                  <select required className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface focus:outline-none focus:border-primary">
+                    <option value="">Select a site...</option>
+                    {sites?.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-on-surface mb-1">Equipment / Alarm (Optional)</label>
+                  <select className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface focus:outline-none focus:border-primary">
+                    <option value="">None</option>
+                    <option value="eq-1">UPS-A</option>
+                    <option value="eq-2">Generator 1</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-on-surface mb-1">Priority</label>
+                  <select className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface focus:outline-none focus:border-primary">
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-on-surface mb-1">Assignee</label>
+                  <select className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface focus:outline-none focus:border-primary">
+                    <option value="">Unassigned</option>
+                    <option value="eng-1">Ahmed Engineer</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-border-subtle">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-md font-medium text-on-surface hover:bg-bg-secondary transition-colors">Cancel</button>
+                <button type="submit" className="bg-primary text-on-primary px-4 py-2 rounded-md font-medium hover:bg-primary-fixed-dim transition-colors">Create Ticket</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

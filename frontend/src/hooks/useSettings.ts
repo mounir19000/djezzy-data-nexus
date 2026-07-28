@@ -1,18 +1,21 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-const fetchRules = async () => {
+const fetchRules = async (siteId?: string) => {
   const token = localStorage.getItem('djezzy_token');
-  const res = await fetch('http://localhost:4000/api/settings/rules', {
+  const url = siteId 
+    ? `http://localhost:4000/api/settings/rules?siteId=${siteId}`
+    : 'http://localhost:4000/api/settings/rules';
+  const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` }
   });
   if (!res.ok) throw new Error('Failed to fetch expert rules');
   return res.json();
 };
 
-export const useExpertRules = () => {
+export const useExpertRules = (siteId?: string) => {
   return useQuery({
-    queryKey: ['rules'],
-    queryFn: fetchRules,
+    queryKey: ['rules', siteId],
+    queryFn: () => fetchRules(siteId),
   });
 };
 

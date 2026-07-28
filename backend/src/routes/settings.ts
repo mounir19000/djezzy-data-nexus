@@ -4,10 +4,14 @@ import { requireAuth, requireRole } from '../middleware/auth';
 
 const router = Router();
 
-// Get all expert rules
-router.get('/rules', requireAuth, requireRole(['Super Admin']), async (req, res: Response) => {
+// Get expert rules
+router.get('/rules', requireAuth, requireRole(['Super Admin', 'Engineer']), async (req, res: Response) => {
   try {
+    const { siteId } = req.query;
+    const whereClause = siteId ? { siteId: String(siteId) } : {};
+    
     const rules = await prisma.expertRule.findMany({
+      where: whereClause,
       orderBy: { updatedAt: 'desc' }
     });
     res.json(rules);
@@ -17,7 +21,7 @@ router.get('/rules', requireAuth, requireRole(['Super Admin']), async (req, res:
 });
 
 // Update a rule threshold
-router.put('/rules/:id', requireAuth, requireRole(['Super Admin']), async (req: any, res: Response) => {
+router.put('/rules/:id', requireAuth, requireRole(['Super Admin', 'Engineer']), async (req: any, res: Response) => {
   try {
     const { threshold } = req.body;
     if (threshold === undefined) {
