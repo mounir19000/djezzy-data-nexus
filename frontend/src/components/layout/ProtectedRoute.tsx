@@ -1,9 +1,9 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAppStore } from '../../../store/useAppStore';
+import { useAppStore } from '../../store/useAppStore';
 
 export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const isAuthenticated = useAppStore(state => state.isAuthenticated);
+  const isAuthenticated = useAppStore((state: any) => state.isAuthenticated);
   const location = useLocation();
 
   if (!isAuthenticated) {
@@ -14,7 +14,7 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 export const RoleBoundary = ({ allowedRoles, children }: { allowedRoles: string[], children: React.ReactNode }) => {
-  const user = useAppStore(state => state.user);
+  const user = useAppStore((state: any) => state.user);
 
   if (!user) return null;
   

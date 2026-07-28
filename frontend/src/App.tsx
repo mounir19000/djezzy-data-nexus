@@ -36,7 +36,7 @@ function App() {
           </ProtectedRoute>
         }>
           {/* Default Route */}
-          <Route index element={<Navigate to="/twin" replace />} />
+          <Route index element={<NationalOperationsDashboard />} />
           <Route path="analytics" element={<NationalAnalyticsDashboard />} />
           <Route path="twin" element={<DigitalTwinDashboard />} />
           <Route path="power-flow" element={<PowerFlowView />} />
