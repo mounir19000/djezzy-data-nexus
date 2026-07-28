@@ -25,6 +25,7 @@ const io = new Server(httpServer, {
     origin: '*',
   }
 });
+app.set('io', io);
 const PORT = process.env.PORT || 4000;
 
 // Middleware
