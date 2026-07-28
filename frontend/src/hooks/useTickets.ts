@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const fetchTickets = async () => {
-  const token = JSON.parse(localStorage.getItem('auth-storage') || '{}')?.state?.token;
+  const token = localStorage.getItem('djezzy_token');
   const res = await fetch('http://localhost:4000/api/tickets', {
     headers: { Authorization: `Bearer ${token}` }
   });
@@ -20,7 +20,7 @@ export const useUpdateTicketStatus = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, status }: { id: string, status: string }) => {
-      const token = JSON.parse(localStorage.getItem('auth-storage') || '{}')?.state?.token;
+      const token = localStorage.getItem('djezzy_token');
       const res = await fetch(`http://localhost:4000/api/tickets/${id}/status`, {
         method: 'PUT',
         headers: { 

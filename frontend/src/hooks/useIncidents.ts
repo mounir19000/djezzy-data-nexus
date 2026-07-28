@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const fetchIncidents = async () => {
-  const token = JSON.parse(localStorage.getItem('auth-storage') || '{}')?.state?.token;
+  const token = localStorage.getItem('djezzy_token');
   const res = await fetch('http://localhost:4000/api/incidents', {
     headers: { Authorization: `Bearer ${token}` }
   });
@@ -20,7 +20,7 @@ export const useAcknowledgeIncident = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const token = JSON.parse(localStorage.getItem('auth-storage') || '{}')?.state?.token;
+      const token = localStorage.getItem('djezzy_token');
       const res = await fetch(`http://localhost:4000/api/incidents/${id}/acknowledge`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
