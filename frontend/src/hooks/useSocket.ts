@@ -17,6 +17,14 @@ export const useSocket = (url: string = 'http://localhost:4000') => {
       updateTelemetry(data);
     });
 
+    socketRef.current.on('alarm_update', () => {
+      window.dispatchEvent(new Event('alarm_update'));
+    });
+
+    socketRef.current.on('ticket_update', () => {
+      window.dispatchEvent(new Event('ticket_update'));
+    });
+
     socketRef.current.on('disconnect', () => {
       console.log('Disconnected from telemetry service');
     });

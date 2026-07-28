@@ -7,16 +7,38 @@ const router = Router();
 
 // Get all active alarms
 router.get('/', requireAuth, async (req: any, res: Response) => {
+  const authReq = req as AuthRequest;
+  const siteId = req.query.siteId ? String(req.query.siteId) : undefined;
+
   try {
     const alarms = await prisma.alarm.findMany({
-      where: { active: true },
+      where: {
+        active: true,
+        equipment: {
+          room: {
+            ...(siteId ? { siteId } : {}),
+            ...(authReq.user?.roleName === 'Super Admin' ? {} : {
+              site: {
+                userAssignments: {
+                  some: { userId: authReq.user?.id }
+                }
+              }
+            })
+          }
+        }
+      },
       include: {
         equipment: {
           include: {
-            room: true
+            room: { include: { site: true } }
           }
         },
-        tickets: true
+        tickets: {
+          include: {
+            assignee: { select: { id: true, firstName: true, lastName: true } },
+            report: true
+          }
+        }
       },
       orderBy: { createdAt: 'desc' }
     });

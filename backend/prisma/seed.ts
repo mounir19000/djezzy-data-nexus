@@ -46,6 +46,7 @@ async function main() {
         'read:diagnoses',
         'assign:tickets',
         'resolve:tickets',
+        'submit:ticket_reports',
         'manage:maintenance',
         'write:knowledge'
       ]
@@ -58,6 +59,7 @@ async function main() {
         'read:diagnoses',
         'assign:tickets',
         'resolve:tickets',
+        'submit:ticket_reports',
         'manage:maintenance',
         'write:knowledge'
       ]
@@ -136,7 +138,7 @@ async function main() {
     }
   });
 
-  await prisma.site.upsert({
+  const algiersSite = await prisma.site.upsert({
     where: { id: 'msc01-algiers' },
     update: {
       name: 'MSC01 Algiers',
@@ -173,6 +175,29 @@ async function main() {
       overallHealth: 82.5
     }
   });
+
+  await Promise.all([
+    prisma.siteAssignment.upsert({
+      where: { userId_siteId: { userId: adminUser.id, siteId: algiersSite.id } },
+      update: {},
+      create: { userId: adminUser.id, siteId: algiersSite.id }
+    }),
+    prisma.siteAssignment.upsert({
+      where: { userId_siteId: { userId: adminUser.id, siteId: blidaSite.id } },
+      update: {},
+      create: { userId: adminUser.id, siteId: blidaSite.id }
+    }),
+    prisma.siteAssignment.upsert({
+      where: { userId_siteId: { userId: engineerUser.id, siteId: blidaSite.id } },
+      update: {},
+      create: { userId: engineerUser.id, siteId: blidaSite.id }
+    }),
+    prisma.siteAssignment.upsert({
+      where: { userId_siteId: { userId: operatorUser.id, siteId: blidaSite.id } },
+      update: {},
+      create: { userId: operatorUser.id, siteId: blidaSite.id }
+    })
+  ]);
 
   const legacyEquipment = await prisma.equipment.findMany({
     where: {

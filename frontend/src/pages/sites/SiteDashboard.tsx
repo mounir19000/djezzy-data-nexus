@@ -257,7 +257,7 @@ const SiteDashboard = () => {
               <h3 className="text-lg font-sans font-medium text-on-surface">Alarms</h3>
               <p className="text-sm text-on-surface-variant mt-1">Current causes needing review.</p>
             </div>
-            <Link to="/incidents" className="text-xs text-primary hover:underline">Incident Center</Link>
+            <Link to={`/incidents?siteId=${site.id}`} className="text-xs text-primary hover:underline">Incident Center</Link>
           </div>
           <div className="space-y-3">
             {alarms.length === 0 ? (

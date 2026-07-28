@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Badge from '../../components/ui/Badge';
 import { AlertTriangle, Activity, Zap, Info, ArrowRight, Check, FileText } from 'lucide-react';
 import { useIncidents, useAcknowledgeIncident } from '../../hooks/useIncidents';
@@ -7,7 +8,9 @@ import { useAppStore } from '../../store/useAppStore';
 import { useUsers } from '../../hooks/useUsers';
 
 const IncidentDiagnosisCenter = () => {
-  const { data: alarms, isLoading } = useIncidents();
+  const [searchParams] = useSearchParams();
+  const siteId = searchParams.get('siteId') || undefined;
+  const { data: alarms, isLoading } = useIncidents(siteId);
   const { mutate: acknowledge, isPending } = useAcknowledgeIncident();
   const { mutate: createTicket, isPending: isCreatingTicket } = useCreateTicket();
   const { data: users } = useUsers();
@@ -31,7 +34,7 @@ const IncidentDiagnosisCenter = () => {
     setSelectedEngineer('');
   }, [selectedAlarm?.id]);
 
-  const canCreateTicket = user?.role === 'Super Admin' || user?.role === 'Site Operator';
+  const canCreateTicket = user?.role === 'Super Admin' || user?.role === 'Site Operator' || user?.role === 'Engineer';
   const engineerOptions = users?.filter((candidate: any) => candidate.role === 'Engineer') || [];
   const openTicket = selectedAlarm?.tickets?.find((ticket: any) => !['resolved', 'closed'].includes(ticket.status));
   const diagnosis = selectedAlarm?.diagnosis;

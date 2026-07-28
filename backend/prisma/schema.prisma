@@ -15,8 +15,10 @@ model User {
   roleId           String            @map("role_id")
   role             Role              @relation(fields: [roleId], references: [id])
   tickets          Ticket[]
+  ticketReports    TicketReport[]    @relation("TicketReportSubmitter")
   maintenanceTasks MaintenanceTask[]
   notifications    Notification[]
+  siteAssignments  SiteAssignment[]
   createdAt        DateTime          @default(now()) @map("created_at")
   updatedAt        DateTime          @updatedAt @map("updated_at")
 
@@ -33,17 +35,31 @@ model Role {
 }
 
 model Site {
-  id            String   @id @default(uuid())
-  name          String
-  location      String
-  latitude      Float?
-  longitude     Float?
-  overallHealth Float        @default(100.0) @map("overall_health")
-  rooms         Room[]
-  expertRules   ExpertRule[]
-  createdAt     DateTime     @default(now()) @map("created_at")
+  id              String           @id @default(uuid())
+  name            String
+  location        String
+  latitude        Float?
+  longitude       Float?
+  overallHealth   Float            @default(100.0) @map("overall_health")
+  rooms           Room[]
+  expertRules     ExpertRule[]
+  notifications   Notification[]
+  userAssignments SiteAssignment[]
+  createdAt       DateTime         @default(now()) @map("created_at")
 
   @@map("sites")
+}
+
+model SiteAssignment {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+  siteId    String   @map("site_id")
+  site      Site     @relation(fields: [siteId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, siteId])
+  @@map("site_assignments")
 }
 
 model Room {
@@ -63,7 +79,7 @@ model Equipment {
   roomId           String            @map("room_id")
   room             Room              @relation(fields: [roomId], references: [id])
   name             String
-  type             String            // UPS, CRAC, Generator, Battery
+  type             String // UPS, CRAC, Generator, Battery
   status           String            @default("healthy") // healthy, warning, critical, offline
   telemetry        Telemetry[]
   alarms           Alarm[]
@@ -89,7 +105,7 @@ model Alarm {
   id          String    @id @default(uuid())
   equipmentId String    @map("equipment_id")
   equipment   Equipment @relation(fields: [equipmentId], references: [id])
-  severity    String    // warning, critical
+  severity    String // warning, critical
   description String
   active      Boolean   @default(true)
   tickets     Ticket[]
@@ -99,21 +115,42 @@ model Alarm {
 }
 
 model Ticket {
-  id          String     @id @default(uuid())
-  alarmId     String?    @map("alarm_id")
-  alarm       Alarm?     @relation(fields: [alarmId], references: [id])
-  equipmentId String     @map("equipment_id")
-  equipment   Equipment  @relation(fields: [equipmentId], references: [id])
+  id          String        @id @default(uuid())
+  alarmId     String?       @map("alarm_id")
+  alarm       Alarm?        @relation(fields: [alarmId], references: [id])
+  equipmentId String        @map("equipment_id")
+  equipment   Equipment     @relation(fields: [equipmentId], references: [id])
   title       String
-  status      String     @default("pending") // pending, assigned, inProgress, resolved, closed
-  priority    String     // low, medium, high
-  assignedTo  String?    @map("assigned_to")
-  assignee    User?      @relation(fields: [assignedTo], references: [id])
-  dueDate     DateTime?  @map("due_date")
-  createdAt   DateTime   @default(now()) @map("created_at")
-  updatedAt   DateTime   @updatedAt @map("updated_at")
+  status      String        @default("pending") // pending, assigned, inProgress, resolved, closed
+  priority    String // low, medium, high
+  source      String        @default("manual") // manual, alarm_manual, alarm_auto
+  assignedTo  String?       @map("assigned_to")
+  assignee    User?         @relation(fields: [assignedTo], references: [id])
+  report      TicketReport?
+  dueDate     DateTime?     @map("due_date")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
 
   @@map("tickets")
+}
+
+model TicketReport {
+  id            String   @id @default(uuid())
+  ticketId      String   @unique @map("ticket_id")
+  ticket        Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  submittedById String   @map("submitted_by_id")
+  submitter     User     @relation("TicketReportSubmitter", fields: [submittedById], references: [id])
+  isFailure     Boolean  @map("is_failure")
+  failureDomain String   @map("failure_domain")
+  rootCause     String   @map("root_cause")
+  actionTaken   String   @map("action_taken")
+  serviceImpact String   @map("service_impact")
+  currentState  String   @map("current_state")
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("ticket_reports")
 }
 
 model MaintenanceTask {
@@ -146,10 +183,14 @@ model Notification {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
   user      User     @relation(fields: [userId], references: [id])
+  siteId    String?  @map("site_id")
+  site      Site?    @relation(fields: [siteId], references: [id])
   message   String
   read      Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at")
 
+  @@index([userId, read, createdAt])
+  @@index([siteId])
   @@map("notifications")
 }
 

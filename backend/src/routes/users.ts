@@ -12,7 +12,8 @@ router.get('/', requireAuth, async (req, res: Response) => {
         email: true,
         firstName: true,
         lastName: true,
-        role: { select: { name: true } }
+        role: { select: { name: true } },
+        siteAssignments: { select: { siteId: true } }
       },
       orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }]
     });
@@ -22,7 +23,8 @@ router.get('/', requireAuth, async (req, res: Response) => {
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
-      role: user.role.name
+      role: user.role.name,
+      siteIds: user.siteAssignments.map((assignment: any) => assignment.siteId)
     })));
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch users' });

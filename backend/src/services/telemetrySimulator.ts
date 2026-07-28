@@ -1,69 +1,439 @@
+import fs from 'fs';
+import path from 'path';
 import { Server } from 'socket.io';
 import { prisma } from '../config/prisma';
+import { createAutomaticTicketForAlarm } from './ticketWorkflow';
+
+type SimulationRow = Record<string, string>;
+
+interface SimEquipment {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  room?: {
+    siteId: string;
+    targetHumidity: number;
+  } | null;
+}
+
+interface AlarmEvent {
+  equipment: SimEquipment;
+  severity: 'warning' | 'critical';
+  description: string;
+}
+
+const CSV_FILE = 'blida_simulated_1week.csv';
+const SIMULATION_INTERVAL_MS = Number(process.env.TELEMETRY_SIMULATION_INTERVAL_MS || 5000);
+const phases = ['L1', 'L2', 'L3'] as const;
+
+const roundMetric = (value: number) => Math.round(value * 100) / 100;
+const normalize = (value: string) => value.replace(/\\/g, ' ').replace(/\s+/g, ' ').trim();
+const normalizeKey = (value: string) => normalize(value)
+  .replace(/^(ups log|clim log|scada):\s*/i, '')
+  .replace(/^(warning|critical|information):\s*/i, '')
+  .replace(/\s+has been restored$/i, '')
+  .toLowerCase();
+
+const parseCsvLine = (line: string) => {
+  const cells: string[] = [];
+  let cell = '';
+  let inQuotes = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    const next = line[index + 1];
+
+    if (char === '"' && next === '"') {
+      cell += char;
+      index += 1;
+    } else if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      cells.push(cell);
+      cell = '';
+    } else {
+      cell += char;
+    }
+  }
+
+  cells.push(cell);
+  return cells;
+};
+
+const resolveSimulationPath = () => {
+  const candidates = [
+    path.resolve(process.cwd(), 'data', CSV_FILE),
+    path.resolve(process.cwd(), '..', 'data', CSV_FILE),
+    path.resolve(__dirname, '..', '..', '..', 'data', CSV_FILE)
+  ];
+
+  return candidates.find((candidate) => fs.existsSync(candidate));
+};
+
+const loadSimulationRows = () => {
+  const csvPath = resolveSimulationPath();
+  if (!csvPath) {
+    console.warn(`Telemetry simulation data file not found: ${CSV_FILE}`);
+    return [];
+  }
+
+  const [headerLine, ...lines] = fs.readFileSync(csvPath, 'utf8').trim().split(/\r?\n/);
+  const headers = parseCsvLine(headerLine);
+
+  return lines
+    .filter(Boolean)
+    .map((line) => {
+      const values = parseCsvLine(line);
+      return Object.fromEntries(headers.map((header, index) => [header, values[index] || '']));
+    });
+};
+
+const simulationRows = loadSimulationRows();
+let simulationCursor = Math.min(
+  simulationRows.length > 0 ? simulationRows.length - 1 : 0,
+  Math.max(0, Number(process.env.TELEMETRY_SIMULATION_START_INDEX || 0))
+);
+
+const numericValue = (row: SimulationRow, key: string, fallback = 0) => {
+  const parsed = Number(row[key]);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const max = (values: number[]) => Math.max(...values);
+const min = (values: number[]) => Math.min(...values);
+
+const findEquipment = (equipments: SimEquipment[], id: string, type: string, nameIncludes?: string) => {
+  return equipments.find((equipment) => equipment.id === id)
+    || equipments.find((equipment) => equipment.type.toLowerCase() === type.toLowerCase() && (!nameIncludes || equipment.name.toLowerCase().includes(nameIncludes.toLowerCase())));
+};
+
+const splitAlarmEntries = (value: string) => value
+  .split('|')
+  .map((entry) => entry.trim())
+  .filter(Boolean);
+
+const isRelevantScadaEntry = (rawEntry: string) => {
+  const lower = rawEntry.toLowerCase();
+  const hasExplicitSite = rawEntry.includes('\\');
+  return !hasExplicitSite || lower.includes('blida msc 10');
+};
+
+const isRestorationEntry = (entry: string) => {
+  const lower = entry.toLowerCase();
+  return lower.includes('has been restored') || lower.includes('load protected by inverter') || lower.includes('alarm reset');
+};
+
+const severityForAlarm = (description: string): 'warning' | 'critical' | null => {
+  const lower = description.toLowerCase();
+
+  if (
+    lower.includes('general alarm')
+    || lower.includes('input supply not ok')
+    || lower.includes('absence de tension')
+    || lower.includes('absence resaux')
+    || lower.includes('temperature haute')
+    || lower.includes('failure')
+  ) {
+    return 'critical';
+  }
+
+  if (
+    lower.includes('operating on battery')
+    || lower.includes('on batterie')
+    || lower.includes('charger preventive')
+    || lower.includes('on bypass')
+    || lower.includes('alarme clim')
+    || lower.includes('alarm set')
+    || lower.includes('wrong password')
+    || lower.includes('overload')
+    || lower.includes('stulz')
+  ) {
+    return 'warning';
+  }
+
+  return null;
+};
+
+const equipmentForAlarm = (
+  description: string,
+  source: string,
+  equipment: {
+    ups?: SimEquipment;
+    ats?: SimEquipment;
+    cooling?: SimEquipment;
+  }
+) => {
+  const lower = description.toLowerCase();
+
+  if (lower.includes('clim') || lower.includes('liebert') || lower.includes('stulz') || lower.includes('temperature')) {
+    return equipment.cooling;
+  }
+
+  if (lower.includes('absence') || lower.includes('reseau') || lower.includes('resaux') || lower.includes('sonalgaz') || lower.includes('tension')) {
+    return equipment.ats;
+  }
+
+  if (source === 'DS3_UPS_Alarm' || lower.includes('ups') || lower.includes('rectifier') || lower.includes('bypass') || lower.includes('battery') || lower.includes('charger')) {
+    return equipment.ups;
+  }
+
+  return equipment.ups || equipment.ats || equipment.cooling;
+};
+
+const sourceLabel = (source: string) => {
+  if (source === 'DS3_UPS_Alarm') return 'UPS Log';
+  if (source === 'DS3_Clim_Alarm') return 'Clim Log';
+  return 'SCADA';
+};
+
+const alarmEventsFromRow = (
+  row: SimulationRow,
+  equipment: {
+    ups?: SimEquipment;
+    ats?: SimEquipment;
+    cooling?: SimEquipment;
+  }
+) => {
+  const alarmColumns = ['DS3_UPS_Alarm', 'DS3_Clim_Alarm', 'DS2_SCADA_Alarm'];
+  const events: AlarmEvent[] = [];
+  const restorations: Array<{ equipment: SimEquipment; key: string }> = [];
+  const seen = new Set<string>();
+
+  for (const source of alarmColumns) {
+    for (const rawEntry of splitAlarmEntries(row[source] || '')) {
+      if (source === 'DS2_SCADA_Alarm' && !isRelevantScadaEntry(rawEntry)) continue;
+
+      const cleaned = normalize(rawEntry);
+      const description = cleaned.replace(/^(Warning|Critical|Information):\s*/i, '').trim();
+      const targetEquipment = equipmentForAlarm(description, source, equipment);
+      if (!targetEquipment) continue;
+
+      if (isRestorationEntry(description)) {
+        restorations.push({ equipment: targetEquipment, key: normalizeKey(description) });
+        continue;
+      }
+
+      const severity = severityForAlarm(description);
+      if (!severity) continue;
+
+      const event = {
+        equipment: targetEquipment,
+        severity,
+        description: `${sourceLabel(source)}: ${description}`
+      };
+      const key = `${event.equipment.id}:${normalizeKey(event.description)}`;
+
+      if (!seen.has(key)) {
+        seen.add(key);
+        events.push(event);
+      }
+    }
+  }
+
+  return { events, restorations };
+};
+
+const notifyAlarmRecipients = async (
+  alarm: { id: string; severity: string; description: string },
+  equipment: SimEquipment,
+  io: Server
+) => {
+  const siteId = equipment.room?.siteId;
+  if (!siteId) return;
+
+  const recipients = await prisma.user.findMany({
+    where: {
+      OR: [
+        { siteAssignments: { some: { siteId } } },
+        { role: { name: 'Super Admin' } }
+      ]
+    },
+    select: { id: true }
+  });
+  const recipientIds = [...new Set(recipients.map((recipient) => recipient.id))];
+
+  for (const recipientId of recipientIds) {
+    await prisma.notification.create({
+      data: {
+        userId: recipientId,
+        siteId,
+        message: `${alarm.severity.toUpperCase()} simulated alarm: ${alarm.description}`
+      }
+    });
+
+    io.emit('notification_update');
+  }
+};
+
+const applyAlarmEvents = async (
+  events: AlarmEvent[],
+  restorations: Array<{ equipment: SimEquipment; key: string }>,
+  io: Server
+) => {
+  for (const restoration of restorations) {
+    const activeAlarms = await prisma.alarm.findMany({
+      where: {
+        equipmentId: restoration.equipment.id,
+        active: true
+      },
+      select: { id: true, description: true }
+    });
+    const alarmIds = activeAlarms
+      .filter((alarm) => normalizeKey(alarm.description).includes(restoration.key) || restoration.key.includes(normalizeKey(alarm.description)))
+      .map((alarm) => alarm.id);
+
+    if (alarmIds.length > 0) {
+      await prisma.alarm.updateMany({
+        where: { id: { in: alarmIds } },
+        data: { active: false }
+      });
+      io.emit('alarm_update', { type: 'restored', alarmIds });
+    }
+  }
+
+  for (const event of events) {
+    const existing = await prisma.alarm.findFirst({
+      where: {
+        equipmentId: event.equipment.id,
+        active: true,
+        description: event.description
+      }
+    });
+
+    if (existing) continue;
+
+    const alarm = await prisma.alarm.create({
+      data: {
+        equipmentId: event.equipment.id,
+        severity: event.severity,
+        description: event.description,
+        active: true
+      }
+    });
+
+    io.emit('alarm_update', { type: 'created', alarm });
+    await notifyAlarmRecipients(alarm, event.equipment, io);
+    await createAutomaticTicketForAlarm(alarm, event.equipment, io);
+  }
+};
 
 export const startTelemetrySimulation = (io: Server) => {
+  if (simulationRows.length === 0) {
+    console.warn('Telemetry simulation disabled because no simulation rows were loaded.');
+    return;
+  }
+
   setInterval(async () => {
     try {
-      // Fetch all equipment to generate telemetry for them
+      const row = simulationRows[simulationCursor];
+      simulationCursor = (simulationCursor + 1) % simulationRows.length;
+
+      const timestamp = new Date();
       const equipments = await prisma.equipment.findMany({
         include: { room: true }
+      }) as SimEquipment[];
+
+      const ups = findEquipment(equipments, 'eq-ups-a', 'UPS');
+      const ats = findEquipment(equipments, 'eq-ats-tgbt', 'ATS');
+      const battery = findEquipment(equipments, 'eq-battery-bank-a', 'Battery');
+      const switchCore = findEquipment(equipments, 'eq-switch-core', 'Network', 'switch');
+      const vsat = findEquipment(equipments, 'eq-vsat-rack', 'Network', 'vsat');
+      const enr = findEquipment(equipments, 'eq-rectifier-huawei', 'Rectifier');
+      const cooling = findEquipment(equipments, 'eq-clim-stulz-01', 'Cooling', 'stulz');
+
+      const inputVoltages = phases.map((phase) => numericValue(row, `DS3_Input_Voltage_${phase}`));
+      const outputVoltages = phases.map((phase) => numericValue(row, `DS3_Output_Voltage_${phase}`));
+      const outputLoads = phases.map((phase) => numericValue(row, `DS3_Output_Load_${phase}`));
+      const upsLoad = max(outputLoads);
+      const telemetryData: Array<{ equipmentId: string; metricType: string; value: number; timestamp: Date }> = [];
+      const telemetryUpdates: Array<{ equipment: SimEquipment; metrics: Record<string, number> }> = [];
+
+      const addTelemetry = (equipment: SimEquipment | undefined, metrics: Record<string, number | undefined>) => {
+        if (!equipment) return;
+
+        const numericMetrics = Object.fromEntries(
+          Object.entries(metrics).filter((entry): entry is [string, number] => typeof entry[1] === 'number' && Number.isFinite(entry[1]))
+        );
+
+        telemetryData.push(...Object.entries(numericMetrics).map(([metricType, value]) => ({
+          equipmentId: equipment.id,
+          metricType,
+          value,
+          timestamp
+        })));
+        telemetryUpdates.push({ equipment, metrics: numericMetrics });
+      };
+
+      addTelemetry(ups, {
+        temperature: numericValue(row, 'DS3_UPS_Temp'),
+        humidity: ups?.room?.targetHumidity,
+        load: upsLoad,
+        powerDraw: roundMetric(upsLoad * 2.25),
+        inputVoltageL1: inputVoltages[0],
+        inputVoltageL2: inputVoltages[1],
+        inputVoltageL3: inputVoltages[2],
+        outputVoltageL1: outputVoltages[0],
+        outputVoltageL2: outputVoltages[1],
+        outputVoltageL3: outputVoltages[2],
+        outputLoadL1: outputLoads[0],
+        outputLoadL2: outputLoads[1],
+        outputLoadL3: outputLoads[2],
+        phaseUnbalance: roundMetric(max(outputLoads) - min(outputLoads)),
+        batteryCapacity: numericValue(row, 'DS3_Battery_Capacity')
+      });
+      addTelemetry(ats, {
+        load: upsLoad,
+        powerDraw: roundMetric(upsLoad * 1.1),
+        inputVoltageL1: inputVoltages[0],
+        inputVoltageL2: inputVoltages[1],
+        inputVoltageL3: inputVoltages[2],
+        humidity: ats?.room?.targetHumidity
+      });
+      addTelemetry(battery, {
+        temperature: numericValue(row, 'DS2_BAT MSC10'),
+        humidity: battery?.room?.targetHumidity,
+        batteryCapacity: numericValue(row, 'DS3_Battery_Capacity')
+      });
+      addTelemetry(switchCore, {
+        temperature: numericValue(row, 'DS2_SWITCH MSC10'),
+        humidity: switchCore?.room?.targetHumidity
+      });
+      addTelemetry(enr, {
+        temperature: numericValue(row, 'DS2_ENR MSC 10'),
+        humidity: enr?.room?.targetHumidity
+      });
+      addTelemetry(vsat, {
+        temperature: numericValue(row, 'DS2_V-SAT MSC10'),
+        humidity: vsat?.room?.targetHumidity
+      });
+      addTelemetry(cooling, {
+        temperature: numericValue(row, 'DS2_SWITCH MSC10'),
+        humidity: cooling?.room?.targetHumidity
       });
 
-      for (const eq of equipments) {
-        // Base metrics vary slightly
-        const variance = (Math.random() * 2 - 1); // -1 to +1
-        const temperature = parseFloat(((eq.room?.targetTemp || 22) + variance).toFixed(2));
-        const load = parseFloat((40 + (Math.random() * 20)).toFixed(2)); // 40-60%
-        const powerDraw = parseFloat((eq.type === 'UPS' ? 120 + variance * 5 : 48 + variance).toFixed(2));
-        const humidity = parseFloat(((eq.room?.targetHumidity || 45) + (Math.random() * 4 - 2)).toFixed(2));
-        const inputVoltageL1 = parseFloat((227 + variance).toFixed(2));
-        const inputVoltageL2 = parseFloat((230 + variance).toFixed(2));
-        const inputVoltageL3 = parseFloat((231 + variance).toFixed(2));
-        const batteryCapacity = parseFloat((98 + Math.random() * 2).toFixed(2));
-
-        // Save individual telemetry metrics
-        const telemetryData = [
-          { equipmentId: eq.id, metricType: 'temperature', value: temperature },
-          { equipmentId: eq.id, metricType: 'humidity', value: humidity },
-          { equipmentId: eq.id, metricType: 'load', value: load },
-          { equipmentId: eq.id, metricType: 'powerDraw', value: powerDraw },
-        ];
-
-        if (eq.type === 'UPS' || eq.type === 'ATS') {
-          telemetryData.push(
-            { equipmentId: eq.id, metricType: 'inputVoltageL1', value: inputVoltageL1 },
-            { equipmentId: eq.id, metricType: 'inputVoltageL2', value: inputVoltageL2 },
-            { equipmentId: eq.id, metricType: 'inputVoltageL3', value: inputVoltageL3 }
-          );
-        }
-
-        if (eq.type === 'UPS' || eq.type === 'Battery') {
-          telemetryData.push({ equipmentId: eq.id, metricType: 'batteryCapacity', value: batteryCapacity });
-        }
-
+      if (telemetryData.length > 0) {
         await prisma.telemetry.createMany({ data: telemetryData });
+      }
 
-        // Broadcast over Socket.io
+      for (const update of telemetryUpdates) {
         io.emit('telemetry_update', {
-          equipmentId: eq.id,
-          equipmentName: eq.name,
-          siteId: eq.room?.siteId,
+          equipmentId: update.equipment.id,
+          equipmentName: update.equipment.name,
+          siteId: update.equipment.room?.siteId,
+          simulationTime: row.Sim_Datetime,
           metrics: {
-            temperature,
-            load,
-            powerDraw,
-            humidity,
-            inputVoltageL1,
-            inputVoltageL2,
-            inputVoltageL3,
-            batteryCapacity,
-            status: eq.status
+            ...update.metrics,
+            status: update.equipment.status
           },
-          timestamp: new Date()
+          timestamp
         });
       }
+
+      const { events, restorations } = alarmEventsFromRow(row, { ups, ats, cooling });
+      await applyAlarmEvents(events, restorations, io);
     } catch (error) {
       console.error('Telemetry Simulation Error:', error);
     }
-  }, 5000); // Send updates every 5 seconds
+  }, SIMULATION_INTERVAL_MS);
 };

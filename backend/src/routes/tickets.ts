@@ -2,113 +2,62 @@ import { Router, Response } from 'express';
 import { prisma } from '../config/prisma';
 import { requireAuth, requireRole, AuthRequest } from '../middleware/auth';
 import { generateDiagnosis } from '../services/expertSystem';
+import {
+  buildTicketAccessWhere,
+  createIncidentKnowledgeArticle,
+  mapTicketWithDiagnosis,
+  terminalStatuses,
+  ticketInclude,
+  userCanAccessSite,
+  validateEngineerAssignee,
+  validateTicketStatusChange
+} from '../services/ticketWorkflow';
 
 const router = Router();
 
-const terminalStatuses = ['resolved', 'closed'];
-const allowedStatuses = ['pending', 'assigned', 'inProgress', 'resolved', 'closed'];
+const reportFields = [
+  'isFailure',
+  'failureDomain',
+  'rootCause',
+  'actionTaken',
+  'serviceImpact',
+  'currentState'
+];
 
-const createIncidentKnowledgeArticle = async (ticketId: string) => {
-  const ticket = await prisma.ticket.findUnique({
-    where: { id: ticketId },
-    include: {
-      assignee: { select: { firstName: true, lastName: true } },
-      alarm: true,
-      equipment: {
-        include: {
-          room: { include: { site: true } }
-        }
-      }
-    }
-  });
-
-  if (!ticket) return;
-
-  const existing = await prisma.knowledgeBase.findFirst({
-    where: { tags: { has: `ticket:${ticket.id}` } }
-  });
-
-  if (existing) return;
-
-  const diagnosis = ticket.alarm ? generateDiagnosis({
-    severity: ticket.alarm.severity,
-    description: ticket.alarm.description,
-    equipment: ticket.equipment
-  }) : null;
-
-  const content = [
-    '# Incident Summary',
-    `Ticket: ${ticket.id}`,
-    `Site: ${ticket.equipment.room.site.name}`,
-    `Room: ${ticket.equipment.room.name}`,
-    `Equipment: ${ticket.equipment.name} (${ticket.equipment.type})`,
-    `Priority: ${ticket.priority}`,
-    `Assigned engineer: ${ticket.assignee ? `${ticket.assignee.firstName} ${ticket.assignee.lastName}` : 'Unassigned'}`,
-    '',
-    '## Symptoms',
-    ticket.alarm?.description || ticket.title,
-    '',
-    '## Diagnosis',
-    diagnosis?.problem || 'Manual intervention completed.',
-    '',
-    '## Root Cause',
-    diagnosis?.probableCauses.join('; ') || 'To be completed from engineer notes.',
-    '',
-    '## Corrective Actions',
-    diagnosis?.recommendedActions.map((action) => `- ${action}`).join('\n') || '- Followed standard operating procedure.',
-    '',
-    '## Recovery Conditions',
-    diagnosis?.recoveryConditions.map((condition) => `- ${condition}`).join('\n') || '- Equipment restored to healthy state.',
-    '',
-    '## Lessons Learned',
-    'This article was generated automatically when the ticket was closed and should be enriched with engineer notes after review.'
-  ].join('\n');
-
-  await prisma.knowledgeBase.create({
-    data: {
-      title: `Incident Report - ${ticket.title}`,
-      category: 'Incident Reports',
-      tags: [
-        'incident-report',
-        `ticket:${ticket.id}`,
-        ticket.equipment.type,
-        ticket.equipment.room.name
-      ],
-      content
-    }
+const findAccessibleTicket = async (ticketId: string, user: AuthRequest['user']) => {
+  return prisma.ticket.findFirst({
+    where: {
+      AND: [
+        { id: ticketId },
+        buildTicketAccessWhere(user)
+      ]
+    },
+    include: ticketInclude
   });
 };
 
-// Get all tickets
+const siteIdForTicket = (ticket: any) => ticket.equipment?.room?.site?.id || ticket.equipment?.room?.siteId;
+
+// Get tickets. Super Admin sees all; other users are limited to assigned sites.
 router.get('/', requireAuth, async (req: any, res: Response) => {
+  const authReq = req as AuthRequest;
+  const siteId = req.query.siteId ? String(req.query.siteId) : undefined;
+
   try {
     const tickets = await prisma.ticket.findMany({
-      include: {
-        assignee: { select: { id: true, firstName: true, lastName: true } },
-        equipment: {
-          include: {
-            room: { include: { site: true } }
-          }
-        },
-        alarm: true
-      },
+      where: buildTicketAccessWhere(authReq.user, siteId),
+      include: ticketInclude,
       orderBy: { createdAt: 'desc' }
     });
-    res.json(tickets.map((ticket: any) => ({
-      ...ticket,
-      diagnosis: ticket.alarm ? generateDiagnosis({
-        severity: ticket.alarm.severity,
-        description: ticket.alarm.description,
-        equipment: ticket.equipment
-      }) : null
-    })));
+
+    res.json(tickets.map(mapTicketWithDiagnosis));
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch tickets' });
   }
 });
 
-// Create an actionable ticket from an alarm or manual operator review
-router.post('/', requireAuth, requireRole(['Site Operator']), async (req: any, res: Response) => {
+// Create a manual ticket or manually escalate an alarm. Alarm-created tickets are automatic in the simulator.
+router.post('/', requireAuth, requireRole(['Site Operator', 'Engineer']), async (req: any, res: Response) => {
   const authReq = req as AuthRequest;
   const { alarmId, equipmentId, title, priority, assignedTo, dueDate } = req.body;
 
@@ -124,9 +73,21 @@ router.post('/', requireAuth, requireRole(['Site Operator']), async (req: any, r
       }
     }) : null;
 
-    const resolvedEquipmentId = alarm?.equipmentId || equipmentId;
-    if (!resolvedEquipmentId) {
+    const equipment = alarm?.equipment || (equipmentId ? await prisma.equipment.findUnique({
+      where: { id: String(equipmentId) },
+      include: {
+        room: { include: { site: true } }
+      }
+    }) : null);
+
+    if (!equipment) {
       return res.status(400).json({ error: 'equipmentId or alarmId is required' });
+    }
+
+    const siteId = equipment.room.site.id;
+    const canAccess = await userCanAccessSite(authReq.user, siteId);
+    if (!canAccess) {
+      return res.status(403).json({ error: 'Forbidden: ticket is outside your assigned site scope' });
     }
 
     if (alarmId) {
@@ -135,22 +96,22 @@ router.post('/', requireAuth, requireRole(['Site Operator']), async (req: any, r
           alarmId: String(alarmId),
           status: { notIn: terminalStatuses }
         },
-        include: {
-          assignee: { select: { id: true, firstName: true, lastName: true } },
-          equipment: {
-            include: {
-              room: { include: { site: true } }
-            }
-          },
-          alarm: true
-        }
+        include: ticketInclude
       });
 
       if (existingTicket) {
         return res.status(409).json({
           error: 'An open ticket already exists for this alarm',
-          ticket: existingTicket
+          ticket: mapTicketWithDiagnosis(existingTicket)
         });
+      }
+    }
+
+    const resolvedAssignee = assignedTo || (authReq.user?.roleName === 'Engineer' ? authReq.user.id : undefined);
+    if (resolvedAssignee) {
+      const assigneeValidation = await validateEngineerAssignee(String(resolvedAssignee), siteId);
+      if (!assigneeValidation.valid) {
+        return res.status(400).json({ error: assigneeValidation.message });
       }
     }
 
@@ -158,28 +119,22 @@ router.post('/', requireAuth, requireRole(['Site Operator']), async (req: any, r
     const ticket = await prisma.ticket.create({
       data: {
         alarmId: alarm?.id,
-        equipmentId: resolvedEquipmentId,
+        equipmentId: equipment.id,
         title: title?.trim() || `Respond to ${alarm?.description || 'operational event'}`,
-        status: assignedTo ? 'assigned' : 'pending',
+        status: resolvedAssignee ? 'assigned' : 'pending',
         priority: ticketPriority,
-        assignedTo: assignedTo || undefined,
+        source: alarm ? 'alarm_manual' : 'manual',
+        assignedTo: resolvedAssignee || undefined,
         dueDate: dueDate ? new Date(dueDate) : undefined
       },
-      include: {
-        assignee: { select: { id: true, firstName: true, lastName: true } },
-        equipment: {
-          include: {
-            room: { include: { site: true } }
-          }
-        },
-        alarm: true
-      }
+      include: ticketInclude
     });
 
-    if (assignedTo) {
+    if (resolvedAssignee) {
       await prisma.notification.create({
         data: {
-          userId: assignedTo,
+          userId: resolvedAssignee,
+          siteId,
           message: `Ticket ${ticket.id.substring(0, 8)} assigned: ${ticket.title}`
         }
       });
@@ -188,71 +143,128 @@ router.post('/', requireAuth, requireRole(['Site Operator']), async (req: any, r
     await prisma.notification.create({
       data: {
         userId: authReq.user!.id,
-        message: `Ticket ${ticket.id.substring(0, 8)} created from ${alarm ? 'expert diagnosis' : 'operator review'}.`
+        siteId,
+        message: `Ticket ${ticket.id.substring(0, 8)} launched for ${equipment.name}.`
       }
     });
 
-    res.status(201).json({
-      ...ticket,
-      diagnosis: ticket.alarm ? generateDiagnosis({
-        severity: ticket.alarm.severity,
-        description: ticket.alarm.description,
-        equipment: ticket.equipment
-      }) : null
-    });
+    res.status(201).json(mapTicketWithDiagnosis(ticket));
   } catch (error) {
     console.error('Create ticket error:', error);
     res.status(500).json({ error: 'Failed to create ticket' });
   }
 });
 
-// Update ticket status
+// Update ticket status and optional assignment in one regulated workflow move.
 router.put('/:id/status', requireAuth, async (req: any, res: Response) => {
   const authReq = req as AuthRequest;
-  const { status } = req.body; // e.g. "inProgress", "resolved"
-  
+  const { status, assignedTo } = req.body;
+
   if (!status) return res.status(400).json({ error: 'Status is required' });
-  if (!allowedStatuses.includes(status)) return res.status(400).json({ error: 'Invalid status' });
-  if (authReq.user?.roleName === 'Site Operator' && terminalStatuses.includes(status)) {
-    return res.status(403).json({ error: 'Site Operators cannot resolve or close tickets' });
-  }
 
   try {
-    const ticket = await prisma.ticket.update({
-      where: { id: req.params.id },
-      data: { status },
-      include: {
-        alarm: true,
-        equipment: {
-          include: {
-            room: { include: { site: true } }
-          }
-        },
-        assignee: { select: { id: true, firstName: true, lastName: true } }
+    const ticket = await findAccessibleTicket(req.params.id, authReq.user);
+    if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+
+    const siteId = siteIdForTicket(ticket);
+    const nextAssigneeId = Object.prototype.hasOwnProperty.call(req.body, 'assignedTo')
+      ? (assignedTo || null)
+      : ticket.assignedTo;
+
+    if (nextAssigneeId) {
+      const assigneeValidation = await validateEngineerAssignee(String(nextAssigneeId), siteId);
+      if (!assigneeValidation.valid) {
+        return res.status(400).json({ error: assigneeValidation.message });
       }
+    }
+
+    const transitionError = validateTicketStatusChange(ticket, String(status), nextAssigneeId, authReq.user);
+    if (transitionError) {
+      return res.status(400).json({ error: transitionError });
+    }
+
+    const updatedTicket = await prisma.ticket.update({
+      where: { id: req.params.id },
+      data: {
+        status: String(status),
+        assignedTo: nextAssigneeId || null
+      },
+      include: ticketInclude
     });
 
-    if (terminalStatuses.includes(status) && ticket.alarmId) {
+    if (terminalStatuses.includes(String(status)) && updatedTicket.alarmId) {
       await prisma.alarm.update({
-        where: { id: ticket.alarmId },
+        where: { id: updatedTicket.alarmId },
         data: { active: false }
       });
     }
 
     if (status === 'closed') {
-      await createIncidentKnowledgeArticle(ticket.id);
+      await createIncidentKnowledgeArticle(updatedTicket.id);
     }
-    
-    res.json({
-      ...ticket,
-      diagnosis: ticket.alarm ? generateDiagnosis({
-        severity: ticket.alarm.severity,
-        description: ticket.alarm.description,
-        equipment: ticket.equipment
-      }) : null
-    });
+
+    res.json(mapTicketWithDiagnosis(updatedTicket));
   } catch (error) {
+    console.error('Update ticket status error:', error);
     res.status(500).json({ error: 'Failed to update ticket status' });
+  }
+});
+
+// Submit or update the engineer response report for a ticket.
+router.post('/:id/report', requireAuth, requireRole(['Engineer']), async (req: any, res: Response) => {
+  const authReq = req as AuthRequest;
+
+  try {
+    const ticket = await findAccessibleTicket(req.params.id, authReq.user);
+    if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+
+    if (authReq.user?.roleName === 'Engineer' && ticket.assignedTo !== authReq.user.id) {
+      return res.status(403).json({ error: 'Only the assigned engineer can submit this ticket report' });
+    }
+
+    const missingField = reportFields.find((field) => {
+      if (field === 'isFailure') return typeof req.body[field] !== 'boolean';
+      return !String(req.body[field] || '').trim();
+    });
+
+    if (missingField) {
+      return res.status(400).json({ error: `Missing report field: ${missingField}` });
+    }
+
+    await prisma.ticketReport.upsert({
+      where: { ticketId: ticket.id },
+      update: {
+        isFailure: Boolean(req.body.isFailure),
+        failureDomain: String(req.body.failureDomain),
+        rootCause: String(req.body.rootCause),
+        actionTaken: String(req.body.actionTaken),
+        serviceImpact: String(req.body.serviceImpact),
+        currentState: String(req.body.currentState),
+        notes: req.body.notes ? String(req.body.notes).trim() : null,
+        submittedById: authReq.user!.id
+      },
+      create: {
+        ticketId: ticket.id,
+        submittedById: authReq.user!.id,
+        isFailure: Boolean(req.body.isFailure),
+        failureDomain: String(req.body.failureDomain),
+        rootCause: String(req.body.rootCause),
+        actionTaken: String(req.body.actionTaken),
+        serviceImpact: String(req.body.serviceImpact),
+        currentState: String(req.body.currentState),
+        notes: req.body.notes ? String(req.body.notes).trim() : null
+      }
+    });
+
+    const updatedTicket = await prisma.ticket.findUnique({
+      where: { id: ticket.id },
+      include: ticketInclude
+    });
+
+    res.json(mapTicketWithDiagnosis(updatedTicket));
+  } catch (error) {
+    console.error('Submit ticket report error:', error);
+    res.status(500).json({ error: 'Failed to submit ticket report' });
   }
 });
 

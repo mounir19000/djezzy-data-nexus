@@ -16,6 +16,10 @@ const siteInclude = {
           },
           tickets: {
             where: { status: { notIn: ['resolved', 'closed'] } },
+            include: {
+              assignee: { select: { id: true, firstName: true, lastName: true } },
+              report: true
+            },
             orderBy: { createdAt: 'desc' as const }
           },
           maintenanceTasks: {
@@ -99,6 +103,7 @@ router.get('/:id/dashboard', requireAuth, async (req, res: Response) => {
         where: equipmentWhere,
         include: {
           assignee: { select: { id: true, firstName: true, lastName: true } },
+          report: true,
           equipment: {
             include: { room: true }
           },
