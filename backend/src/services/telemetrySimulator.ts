@@ -129,7 +129,11 @@ const severityForAlarm = (description: string): 'warning' | 'critical' | null =>
     || lower.includes('input supply not ok')
     || lower.includes('absence de tension')
     || lower.includes('absence resaux')
+    || lower.includes('defaut groupe')
+    || lower.includes('generator fault')
     || lower.includes('temperature haute')
+    || lower.includes('fire common')
+    || lower.includes('inondation')
     || lower.includes('failure')
   ) {
     return 'critical';
@@ -143,7 +147,16 @@ const severityForAlarm = (description: string): 'warning' | 'critical' | null =>
     || lower.includes('alarme clim')
     || lower.includes('alarm set')
     || lower.includes('wrong password')
+    || lower.includes('login failure')
+    || lower.includes('liaison scada')
+    || lower.includes('low battery')
+    || lower.includes('batterie faible')
+    || lower.includes('pression')
+    || lower.includes('gaz chaud')
+    || lower.includes('redresseur')
+    || lower.includes('disjoncteur')
     || lower.includes('overload')
+    || lower.includes('surcharge')
     || lower.includes('stulz')
   ) {
     return 'warning';
@@ -159,16 +172,30 @@ const equipmentForAlarm = (
     ups?: SimEquipment;
     ats?: SimEquipment;
     cooling?: SimEquipment;
+    battery?: SimEquipment;
+    generator?: SimEquipment;
+    switchCore?: SimEquipment;
+    electrical?: SimEquipment;
   }
 ) => {
   const lower = description.toLowerCase();
 
   if (lower.includes('clim') || lower.includes('liebert') || lower.includes('stulz') || lower.includes('temperature')) {
+    if (lower.includes('salle batterie') && equipment.battery) return equipment.battery;
+    if ((lower.includes('salle switch') || lower.includes('salle technique')) && equipment.switchCore) return equipment.switchCore;
     return equipment.cooling;
+  }
+
+  if (lower.includes('groupe') || lower.includes('generator')) {
+    return equipment.generator || equipment.ats;
   }
 
   if (lower.includes('absence') || lower.includes('reseau') || lower.includes('resaux') || lower.includes('sonalgaz') || lower.includes('tension')) {
     return equipment.ats;
+  }
+
+  if (lower.includes('inondation') || lower.includes('fuite')) {
+    return equipment.electrical || equipment.cooling || equipment.ats;
   }
 
   if (source === 'DS3_UPS_Alarm' || lower.includes('ups') || lower.includes('rectifier') || lower.includes('bypass') || lower.includes('battery') || lower.includes('charger')) {
@@ -203,6 +230,10 @@ const alarmTransitionsFromRow = (
     ups?: SimEquipment;
     ats?: SimEquipment;
     cooling?: SimEquipment;
+    battery?: SimEquipment;
+    generator?: SimEquipment;
+    switchCore?: SimEquipment;
+    electrical?: SimEquipment;
   }
 ) => {
   const alarmColumns = ['DS3_UPS_Alarm', 'DS3_Clim_Alarm', 'DS2_SCADA_Alarm'];
@@ -449,7 +480,15 @@ export const startTelemetrySimulation = (io: Server) => {
         });
       }
 
-      const transitions = alarmTransitionsFromRow(row, { ups, ats, cooling });
+      const transitions = alarmTransitionsFromRow(row, {
+        ups,
+        ats,
+        cooling,
+        battery,
+        generator: findEquipment(equipments, 'eq-generator-01', 'Generator'),
+        switchCore,
+        electrical: enr || ats
+      });
       await applyAlarmTransitions(transitions, timestamp, io);
     } catch (error) {
       console.error('Telemetry Simulation Error:', error);

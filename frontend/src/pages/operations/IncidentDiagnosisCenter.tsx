@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import Badge from '../../components/ui/Badge';
 import { AlertTriangle, Activity, Zap, Info, ArrowRight, Check, FileText } from 'lucide-react';
 import { useIncidents, useAcknowledgeIncident } from '../../hooks/useIncidents';
@@ -8,8 +8,9 @@ import { useAppStore } from '../../store/useAppStore';
 import { useUsers } from '../../hooks/useUsers';
 
 const IncidentDiagnosisCenter = () => {
+  const { siteId: routeSiteId } = useParams();
   const [searchParams] = useSearchParams();
-  const siteId = searchParams.get('siteId') || undefined;
+  const siteId = routeSiteId || searchParams.get('siteId') || undefined;
   const { data: alarms, isLoading } = useIncidents(siteId);
   const { mutate: acknowledge, isPending } = useAcknowledgeIncident();
   const { mutate: createTicket, isPending: isCreatingTicket } = useCreateTicket();
@@ -21,7 +22,7 @@ const IncidentDiagnosisCenter = () => {
   const [selectedEngineer, setSelectedEngineer] = useState('');
 
   useEffect(() => {
-    if (alarms && alarms.length > 0 && !selectedAlarm) {
+    if (alarms && alarms.length > 0 && (!selectedAlarm || !alarms.some((alarm: any) => alarm.id === selectedAlarm.id))) {
       setSelectedAlarm(alarms[0]);
     } else if (alarms && alarms.length === 0) {
       setSelectedAlarm(null);
@@ -38,6 +39,8 @@ const IncidentDiagnosisCenter = () => {
   const engineerOptions = users?.filter((candidate: any) => candidate.role === 'Engineer') || [];
   const openTicket = selectedAlarm?.tickets?.find((ticket: any) => !['resolved', 'closed'].includes(ticket.status));
   const diagnosis = selectedAlarm?.diagnosis;
+  const expertMatches = selectedAlarm?.expertDiagnostics || [];
+  const alarmTag = selectedAlarm?.normalizedAlarm?.label || selectedAlarm?.normalizedAlarm?.type;
 
   const handleCreateTicket = () => {
     if (!selectedAlarm || !canCreateTicket || openTicket) return;
@@ -67,7 +70,7 @@ const IncidentDiagnosisCenter = () => {
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
         {/* Alarm Feed */}
         <div className="col-span-1 lg:col-span-5 bg-bg-surface border border-border-subtle rounded-lg p-6 flex flex-col h-full overflow-hidden">
-          <h3 className="text-lg font-sans font-medium text-on-surface mb-4">Live SCADA Alarms</h3>
+          <h3 className="text-lg font-sans font-medium text-on-surface mb-4">Live Site SCADA Alarms</h3>
           
           <div className="flex-1 overflow-y-auto space-y-3 pr-2">
             {!alarms || alarms.length === 0 ? (
@@ -91,12 +94,15 @@ const IncidentDiagnosisCenter = () => {
                 <div>
                   <h4 className="font-sans font-medium text-on-surface">{alarm.equipment?.name} - {alarm.description}</h4>
                   <p className="text-sm text-on-surface-variant mt-1 font-mono">Location: {alarm.equipment?.room?.name || 'Unknown'}</p>
+                  {alarm.normalizedAlarm?.label && (
+                    <p className="text-xs text-secondary mt-2 font-mono">{alarm.normalizedAlarm.label}</p>
+                  )}
                 </div>
                 
                 <div className="flex items-center justify-between mt-1">
                   <div className="flex items-center gap-1 text-secondary text-sm font-medium">
                     <Activity className="w-4 h-4" />
-                    <span>{alarm.tickets?.length ? 'Ticket Linked' : 'Expert Diagnosis Available'}</span>
+                    <span>{alarm.tickets?.length ? 'Ticket Linked' : alarm.diagnosis?.ruleId ? `Rule ${alarm.diagnosis.ruleId}` : 'Expert Diagnosis Available'}</span>
                   </div>
                   <button 
                     onClick={(e) => { e.stopPropagation(); acknowledge(alarm.id); }}
@@ -122,7 +128,11 @@ const IncidentDiagnosisCenter = () => {
                   <Zap className="w-5 h-5 text-secondary" />
                   Rule-Based Expert Diagnosis
                 </h3>
-                <span className="text-sm font-mono text-on-surface-variant">For {selectedAlarm.id.substring(0, 8)}</span>
+                <div className="flex items-center gap-2">
+                  {diagnosis?.ruleId && <span className="text-xs font-mono text-primary bg-primary/10 border border-primary/30 rounded px-2 py-1">{diagnosis.ruleId}</span>}
+                  {diagnosis?.faultId && <span className="text-xs font-mono text-on-surface-variant bg-background border border-border-subtle rounded px-2 py-1">{diagnosis.faultId}</span>}
+                  <span className="text-sm font-mono text-on-surface-variant">For {selectedAlarm.id.substring(0, 8)}</span>
+                </div>
               </div>
 
           <div className="flex-1 overflow-y-auto space-y-6 pr-2">
@@ -130,7 +140,32 @@ const IncidentDiagnosisCenter = () => {
               <h4 className="text-sm font-mono text-on-surface-variant uppercase tracking-wider mb-2">Detected Problem</h4>
               <p className="text-lg font-sans font-medium text-on-surface">{diagnosis?.problem || selectedAlarm.description}</p>
               <p className="text-sm text-on-surface-variant mt-1">{selectedAlarm.description}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {diagnosis?.ruleName && (
+                  <span className="text-xs font-mono rounded-md border border-secondary/30 bg-secondary/10 px-2.5 py-1 text-secondary">{diagnosis.ruleName}</span>
+                )}
+                {diagnosis?.category && (
+                  <span className="text-xs font-mono rounded-md border border-border-subtle bg-background px-2.5 py-1 text-on-surface-variant">{diagnosis.category}</span>
+                )}
+                {alarmTag && (
+                  <span className="text-xs font-mono rounded-md border border-border-subtle bg-background px-2.5 py-1 text-on-surface-variant">{alarmTag}</span>
+                )}
+              </div>
             </div>
+
+            {(diagnosis?.alarmNames?.length || 0) > 0 && (
+              <div className="bg-background border border-border-subtle p-4 rounded-lg">
+                <h4 className="text-sm font-mono text-on-surface-variant uppercase tracking-wider mb-3">Matched Alarm Pattern</h4>
+                <div className="flex flex-wrap gap-2">
+                  {diagnosis.alarmNames.map((alarmName: string) => (
+                    <span key={alarmName} className="text-xs rounded-md border border-border-subtle bg-bg-surface px-2.5 py-1 text-on-surface">{alarmName}</span>
+                  ))}
+                </div>
+                {expertMatches.length > 1 && (
+                  <p className="text-xs text-on-surface-variant mt-3">{expertMatches.length} expert rules currently match this alarm context; showing the highest-priority one.</p>
+                )}
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-background border border-border-subtle p-4 rounded-lg">
@@ -175,7 +210,12 @@ const IncidentDiagnosisCenter = () => {
             <div className="flex justify-between items-center pt-4">
               <div className="flex flex-col gap-1 text-sm text-on-surface-variant">
                 <span className="flex items-center gap-2"><Info className="w-4 h-4" /> Confidence: {diagnosis?.confidence || 0}%</span>
-                <span>Contact: {diagnosis?.contactPerson || 'Site engineer'}</span>
+                <span>Contact: {(diagnosis?.contacts || [diagnosis?.contactPerson || 'Site engineer']).join(' > ')}</span>
+                {diagnosis?.ruleId && (
+                  <Link to={`/knowledge?search=${encodeURIComponent(diagnosis.ruleId)}`} className="flex items-center gap-2 text-secondary hover:text-primary transition-colors">
+                    <FileText className="w-4 h-4" /> Open knowledge article {diagnosis.ruleId}
+                  </Link>
+                )}
                 {(openTicket || createdTicketId) && (
                   <span className="flex items-center gap-2 text-primary">
                     <FileText className="w-4 h-4" /> Ticket {openTicket?.id?.substring(0, 8) || createdTicketId?.substring(0, 8)} linked

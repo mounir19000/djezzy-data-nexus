@@ -70,6 +70,10 @@ const Sidebar = () => {
                 <Activity className="w-5 h-5" />
                 <span>Power Flow</span>
               </NavLink>
+              <NavLink to={`/sites/${site.id}/incidents`} className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
+                <ShieldAlert className="w-5 h-5" />
+                <span>Incident Center</span>
+              </NavLink>
               <NavLink to={`/sites/${site.id}/tickets`} className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
                 <FileText className="w-5 h-5" />
                 <span>Tickets</span>
@@ -85,10 +89,6 @@ const Sidebar = () => {
         <div className="text-xs font-mono text-on-surface-variant px-3 pt-6 py-2 uppercase tracking-wider">
           Operations
         </div>
-        <NavLink to="/incidents" className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
-          <ShieldAlert className="w-5 h-5" />
-          <span>Incident Center</span>
-        </NavLink>
         {canManageMaintenance && (
           <NavLink to="/maintenance" className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
             <Calendar className="w-5 h-5" />

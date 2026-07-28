@@ -21,7 +21,7 @@ const RoleHome = () => {
   const user = useAppStore((state) => state.user);
 
   if (user?.role === 'Engineer') return <Navigate to="/sites/msc10-blida/dashboard" replace />;
-  if (user?.role === 'Site Operator') return <Navigate to="/incidents?siteId=msc10-blida" replace />;
+  if (user?.role === 'Site Operator') return <Navigate to="/sites/msc10-blida/incidents" replace />;
 
   return <NationalOperationsDashboard />;
 };
@@ -64,6 +64,7 @@ function App() {
           <Route path="sites/:siteId/dashboard" element={<SiteDashboard />} />
           <Route path="sites/:siteId/digital-twin" element={<DigitalTwinDashboard />} />
           <Route path="sites/:siteId/power-flow" element={<PowerFlowView />} />
+          <Route path="sites/:siteId/incidents" element={<IncidentDiagnosisCenter />} />
           <Route path="sites/:siteId/tickets" element={<TicketKanban />} />
           <Route path="sites/:siteId/reports" element={<Reports />} />
           <Route path="twin" element={<SiteQueryRedirect target="digital-twin" />} />
