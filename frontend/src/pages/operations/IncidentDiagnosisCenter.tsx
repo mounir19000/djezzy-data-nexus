@@ -1,15 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Badge from '../../components/ui/Badge';
-import { AlertTriangle, Activity, Zap, Info, ArrowRight } from 'lucide-react';
-
-const mockAlarms = [
-  { id: 'ALM-104', time: '12:42', equipment: 'UPS 2', severity: 'critical', room: 'UPS Room', desc: 'Synchronization Failure', diagnosis: true },
-  { id: 'ALM-105', time: '12:35', equipment: 'CRAC 1', severity: 'warning', room: 'Cooling Sys', desc: 'Return Air Temp High', diagnosis: false },
-  { id: 'ALM-106', time: '11:15', equipment: 'Grid Phase A', severity: 'warning', room: 'Grid', desc: 'Voltage Sag Detected', diagnosis: true },
-];
+import { AlertTriangle, Activity, Zap, Info, ArrowRight, Check } from 'lucide-react';
+import { useIncidents, useAcknowledgeIncident } from '../../hooks/useIncidents';
 
 const IncidentDiagnosisCenter = () => {
-  const [selectedAlarm, setSelectedAlarm] = useState(mockAlarms[0]);
+  const { data: alarms, isLoading } = useIncidents();
+  const { mutate: acknowledge, isPending } = useAcknowledgeIncident();
+  const [selectedAlarm, setSelectedAlarm] = useState<any>(null);
+
+  useEffect(() => {
+    if (alarms && alarms.length > 0 && !selectedAlarm) {
+      setSelectedAlarm(alarms[0]);
+    } else if (alarms && alarms.length === 0) {
+      setSelectedAlarm(null);
+    }
+  }, [alarms, selectedAlarm]);
+
+  if (isLoading) {
+    return <div className="p-8 text-on-surface">Loading incidents...</div>;
+  }
 
   return (
     <div className="h-full flex flex-col space-y-6">
@@ -24,31 +33,42 @@ const IncidentDiagnosisCenter = () => {
           <h3 className="text-lg font-sans font-medium text-on-surface mb-4">Live SCADA Alarms</h3>
           
           <div className="flex-1 overflow-y-auto space-y-3 pr-2">
-            {mockAlarms.map((alarm) => (
+            {!alarms || alarms.length === 0 ? (
+              <div className="text-center p-8 border border-dashed border-border-subtle rounded-lg text-on-surface-variant">
+                No active alarms detected. System healthy!
+              </div>
+            ) : alarms.map((alarm: any) => (
               <div 
                 key={alarm.id} 
                 onClick={() => setSelectedAlarm(alarm)}
-                className={`p-4 rounded-lg cursor-pointer border transition-colors flex flex-col gap-3 ${selectedAlarm.id === alarm.id ? 'bg-bg-secondary border-primary' : 'bg-background border-border-subtle hover:border-on-surface-variant'}`}
+                className={`p-4 rounded-lg cursor-pointer border transition-colors flex flex-col gap-3 ${selectedAlarm?.id === alarm.id ? 'bg-bg-secondary border-primary' : 'bg-background border-border-subtle hover:border-on-surface-variant'}`}
               >
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-mono text-on-surface-variant">{alarm.id}</span>
-                    <span className="text-xs font-mono text-on-surface-variant px-2 py-0.5 bg-bg-surface rounded">{alarm.time}</span>
+                    <span className="text-xs font-mono text-on-surface-variant">{alarm.id.substring(0, 8)}</span>
+                    <span className="text-xs font-mono text-on-surface-variant px-2 py-0.5 bg-bg-surface rounded">{new Date(alarm.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                   <Badge status={alarm.severity as any}>{alarm.severity.toUpperCase()}</Badge>
                 </div>
                 
                 <div>
-                  <h4 className="font-sans font-medium text-on-surface">{alarm.equipment} - {alarm.desc}</h4>
-                  <p className="text-sm text-on-surface-variant mt-1 font-mono">Location: {alarm.room}</p>
+                  <h4 className="font-sans font-medium text-on-surface">{alarm.equipment?.name} - {alarm.description}</h4>
+                  <p className="text-sm text-on-surface-variant mt-1 font-mono">Location: {alarm.equipment?.room?.name || 'Unknown'}</p>
                 </div>
                 
-                {alarm.diagnosis && (
-                  <div className="flex items-center gap-1 mt-1 text-secondary text-sm font-medium">
+                <div className="flex items-center justify-between mt-1">
+                  <div className="flex items-center gap-1 text-secondary text-sm font-medium">
                     <Activity className="w-4 h-4" />
                     <span>Expert Diagnosis Available</span>
                   </div>
-                )}
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); acknowledge(alarm.id); }}
+                    disabled={isPending}
+                    className="text-xs flex items-center gap-1 bg-status-healthy/10 text-status-healthy px-2 py-1 rounded hover:bg-status-healthy/20 transition-colors"
+                  >
+                    <Check className="w-3 h-3" /> Acknowledge
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -56,13 +76,17 @@ const IncidentDiagnosisCenter = () => {
 
         {/* Diagnosis Workspace */}
         <div className="col-span-1 lg:col-span-7 bg-bg-surface border border-border-subtle rounded-lg p-6 flex flex-col h-full overflow-hidden">
-          <div className="flex justify-between items-center mb-6 border-b border-border-subtle pb-4">
-            <h3 className="text-lg font-sans font-medium text-on-surface flex items-center gap-2">
-              <Zap className="w-5 h-5 text-secondary" />
-              AI Expert Diagnosis
-            </h3>
-            <span className="text-sm font-mono text-on-surface-variant">For {selectedAlarm.id}</span>
-          </div>
+          {!selectedAlarm ? (
+             <div className="flex items-center justify-center h-full text-on-surface-variant">Select an alarm to view expert diagnosis.</div>
+          ) : (
+            <>
+              <div className="flex justify-between items-center mb-6 border-b border-border-subtle pb-4">
+                <h3 className="text-lg font-sans font-medium text-on-surface flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-secondary" />
+                  AI Expert Diagnosis
+                </h3>
+                <span className="text-sm font-mono text-on-surface-variant">For {selectedAlarm.id.substring(0, 8)}</span>
+              </div>
 
           <div className="flex-1 overflow-y-auto space-y-6 pr-2">
             <div>
@@ -112,6 +136,8 @@ const IncidentDiagnosisCenter = () => {
               </button>
             </div>
           </div>
+          </>
+          )}
         </div>
       </div>
     </div>
