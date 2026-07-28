@@ -30,7 +30,7 @@ export const NotificationTray = () => {
 
   const fetchNotifications = async () => {
     try {
-      const token = localStorage.getItem('auth-storage') ? JSON.parse(localStorage.getItem('auth-storage') as string)?.state?.token : null;
+      const token = localStorage.getItem('djezzy_token');
       if (!token) return;
 
       const res = await fetch('http://localhost:4000/api/notifications', {
@@ -47,7 +47,7 @@ export const NotificationTray = () => {
 
   const markAsRead = async (id: string) => {
     try {
-      const token = JSON.parse(localStorage.getItem('auth-storage') as string)?.state?.token;
+      const token = localStorage.getItem('djezzy_token');
       await fetch(`http://localhost:4000/api/notifications/${id}/read`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}` }
@@ -60,7 +60,7 @@ export const NotificationTray = () => {
 
   const markAllAsRead = async () => {
     try {
-      const token = JSON.parse(localStorage.getItem('auth-storage') as string)?.state?.token;
+      const token = localStorage.getItem('djezzy_token');
       await fetch(`http://localhost:4000/api/notifications/read-all`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}` }
