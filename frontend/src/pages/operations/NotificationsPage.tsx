@@ -63,11 +63,7 @@ const NotificationsPage = () => {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h2 className="text-3xl font-display font-bold text-on-surface">Notifications</h2>
-          <p className="text-on-surface-variant font-sans mt-1">Live simulated alarms and operator workflow updates.</p>
-        </div>
+      <div className="flex justify-end">
         <button
           type="button"
           onClick={markAllAsRead}
@@ -77,7 +73,7 @@ const NotificationsPage = () => {
           <CheckCheck className="w-4 h-4" />
           Mark all as read
         </button>
-      </header>
+      </div>
 
       <section className="bg-bg-surface border border-border-subtle rounded-lg overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-border-subtle">

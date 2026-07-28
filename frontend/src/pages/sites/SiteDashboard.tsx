@@ -36,7 +36,7 @@ const toneForStatus = {
 
 const statusLabel = {
   healthy: 'Healthy',
-  warning: 'Needs attention',
+  warning: 'Warning',
   critical: 'Critical'
 };
 
@@ -111,14 +111,6 @@ const SiteDashboard = () => {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h2 className="text-3xl font-display font-bold text-on-surface">{site.name} Dashboard</h2>
-          <p className="text-on-surface-variant font-sans mt-1">{site.location} operational health and active alarms.</p>
-        </div>
-        <Badge status={healthStatus}>{statusLabel[healthStatus]}</Badge>
-      </header>
-
       <section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className={`bg-bg-surface border ${healthTone.border} rounded-lg p-6 xl:col-span-2 overflow-hidden relative`}>
           <div className="absolute inset-x-0 top-0 h-1 bg-border-subtle">

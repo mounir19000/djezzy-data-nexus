@@ -1,17 +1,30 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { AlertCircle, CheckCircle, FileText, User } from 'lucide-react';
+import { AlertCircle, CheckCircle, FileText, User, Search } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
 import { useTickets } from '../../hooks/useTickets';
-import { useSites } from '../../hooks/useSites';
 
 const Reports = () => {
   const { siteId } = useParams();
   const { data: tickets, isLoading } = useTickets(siteId);
-  const { data: sites } = useSites();
 
-  const currentSite = useMemo(() => sites?.find((site: any) => site.id === siteId), [sites, siteId]);
+  const [searchTerm, setSearchTerm] = useState('');
+
   const reportedTickets = useMemo(() => tickets?.filter((ticket: any) => ticket.report) || [], [tickets]);
+
+  const filteredReportedTickets = useMemo(() => {
+    if (!searchTerm) return reportedTickets;
+    const lowerSearch = searchTerm.toLowerCase();
+    return reportedTickets.filter((ticket: any) =>
+      ticket.id.toLowerCase().includes(lowerSearch) ||
+      ticket.title.toLowerCase().includes(lowerSearch) ||
+      ticket.report.rootCause?.toLowerCase().includes(lowerSearch) ||
+      ticket.report.actionTaken?.toLowerCase().includes(lowerSearch) ||
+      ticket.equipment?.name?.toLowerCase().includes(lowerSearch) ||
+      ticket.report.submitter?.firstName?.toLowerCase().includes(lowerSearch) ||
+      ticket.report.submitter?.lastName?.toLowerCase().includes(lowerSearch)
+    );
+  }, [reportedTickets, searchTerm]);
   const missingReports = useMemo(() => tickets?.filter((ticket: any) => !ticket.report && ticket.status !== 'pending' && ticket.status !== 'closed') || [], [tickets]);
   const confirmedFailures = reportedTickets.filter((ticket: any) => ticket.report.isFailure).length;
   const falseAlarms = reportedTickets.length - confirmedFailures;
@@ -20,11 +33,6 @@ const Reports = () => {
 
   return (
     <div className="h-full flex flex-col space-y-6">
-      <header>
-        <h2 className="text-3xl font-display font-bold text-on-surface">{siteId ? `${currentSite?.name || 'Site'} Reports` : 'All Ticket Reports'}</h2>
-        <p className="text-on-surface-variant font-sans mt-1">Engineer responses submitted from intervention tickets.</p>
-      </header>
-
       <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-bg-surface border border-border-subtle rounded-lg p-4">
           <p className="text-sm text-on-surface-variant">Submitted Reports</p>
@@ -46,15 +54,27 @@ const Reports = () => {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 min-h-0">
         <section className="xl:col-span-2 bg-bg-surface border border-border-subtle rounded-lg p-6 flex flex-col min-h-[480px]">
-          <h3 className="text-lg font-sans font-medium text-on-surface mb-5 flex items-center gap-2">
-            <FileText className="w-5 h-5 text-on-surface-variant" /> Report History
-          </h3>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+            <h3 className="text-lg font-sans font-medium text-on-surface flex items-center gap-2">
+              <FileText className="w-5 h-5 text-on-surface-variant" /> Report History
+            </h3>
+            <div className="relative w-full sm:w-72">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
+              <input
+                type="text"
+                placeholder="Search reports..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-background border border-border-subtle rounded-md py-2 pl-9 pr-3 text-sm text-on-surface focus:outline-none focus:border-brand-primary transition-colors"
+              />
+            </div>
+          </div>
           <div className="flex-1 overflow-y-auto space-y-3 pr-2">
-            {reportedTickets.length === 0 ? (
+            {filteredReportedTickets.length === 0 ? (
               <div className="bg-background border border-dashed border-border-subtle rounded-md p-8 text-center text-on-surface-variant">
-                No ticket reports submitted yet.
+                {reportedTickets.length === 0 ? 'No ticket reports submitted yet.' : 'No reports match your search.'}
               </div>
-            ) : reportedTickets.map((ticket: any) => (
+            ) : filteredReportedTickets.map((ticket: any) => (
               <div key={ticket.id} className="bg-background border border-border-subtle rounded-md p-4">
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div className="min-w-0">

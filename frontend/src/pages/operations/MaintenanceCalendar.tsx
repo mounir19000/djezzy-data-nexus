@@ -52,18 +52,14 @@ const MaintenanceCalendar = () => {
 
   return (
     <div className="h-full flex flex-col space-y-6 relative">
-      <header className="flex justify-between items-end">
-        <div>
-          <h2 className="text-3xl font-display font-bold text-on-surface">Maintenance & Scheduling</h2>
-          <p className="text-on-surface-variant font-sans mt-1">Preventative maintenance and inspection schedules.</p>
-        </div>
+      <div className="flex justify-end">
         <button 
           onClick={() => setIsModalOpen(true)}
           className="bg-primary text-on-primary px-4 py-2 rounded-md font-sans font-medium hover:bg-primary-fixed-dim transition-colors flex items-center gap-2"
         >
           <CalendarIcon className="w-4 h-4" /> Schedule Maintenance
         </button>
-      </header>
+      </div>
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Calendar View Placeholder */}
