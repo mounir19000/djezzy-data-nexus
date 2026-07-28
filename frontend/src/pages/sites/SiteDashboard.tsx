@@ -154,7 +154,7 @@ const SiteDashboard = () => {
               <h3 className="text-lg font-sans font-medium text-on-surface">Open Tickets</h3>
               <p className="text-sm text-on-surface-variant mt-1">Recent active tickets.</p>
             </div>
-            <Link to={`/incidents?siteId=${site.id}`} className="text-xs text-primary hover:underline">View All</Link>
+            <Link to={`/sites/${site.id}/tickets`} className="text-xs text-primary hover:underline">View All</Link>
           </div>
           <div className="space-y-3 flex-1">
             {tickets.filter((t: any) => !['resolved', 'closed'].includes(t.status)).slice(0, 5).length === 0 ? (
@@ -214,7 +214,7 @@ const SiteDashboard = () => {
               <h3 className="text-lg font-sans font-medium text-on-surface">Alarms</h3>
               <p className="text-sm text-on-surface-variant mt-1">Current causes needing review.</p>
             </div>
-            <Link to={`/incidents?siteId=${site.id}`} className="text-xs text-primary hover:underline">Incident Center</Link>
+            <Link to={`/sites/${site.id}/incidents`} className="text-xs text-primary hover:underline">Incident Center</Link>
           </div>
           <div className="space-y-3 flex-1">
             {alarms.length === 0 ? (

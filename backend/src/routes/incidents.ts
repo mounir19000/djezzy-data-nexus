@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { prisma } from '../config/prisma';
 import { requireAuth, AuthRequest } from '../middleware/auth';
-import { generateDiagnosis } from '../services/expertSystem';
+import { attachExpertDiagnosesToAlarms } from '../services/expertSystem';
 
 const router = Router();
 
@@ -9,44 +9,67 @@ const router = Router();
 router.get('/', requireAuth, async (req: any, res: Response) => {
   const authReq = req as AuthRequest;
   const siteId = req.query.siteId ? String(req.query.siteId) : undefined;
+  const siteScope = {
+    ...(siteId ? { siteId } : {}),
+    ...(authReq.user?.roleName === 'Super Admin' ? {} : {
+      site: {
+        userAssignments: {
+          some: { userId: authReq.user?.id }
+        }
+      }
+    })
+  };
+  const alarmInclude = {
+    equipment: {
+      include: {
+        room: { include: { site: true } }
+      }
+    },
+    tickets: {
+      include: {
+        assignee: { select: { id: true, firstName: true, lastName: true } },
+        report: true
+      }
+    }
+  };
 
   try {
     const alarms = await prisma.alarm.findMany({
       where: {
         active: true,
         equipment: {
-          room: {
-            ...(siteId ? { siteId } : {}),
-            ...(authReq.user?.roleName === 'Super Admin' ? {} : {
-              site: {
-                userAssignments: {
-                  some: { userId: authReq.user?.id }
-                }
-              }
-            })
-          }
+          room: siteScope
         }
+      },
+      include: alarmInclude,
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const contextSince = new Date(Date.now() - 6 * 60 * 60 * 1000);
+    const contextAlarms = await prisma.alarm.findMany({
+      where: {
+        equipment: {
+          room: siteScope
+        },
+        OR: [
+          { active: true },
+          { createdAt: { gte: contextSince } },
+          { clearedAt: { gte: contextSince } }
+        ]
       },
       include: {
         equipment: {
           include: {
             room: { include: { site: true } }
           }
-        },
-        tickets: {
-          include: {
-            assignee: { select: { id: true, firstName: true, lastName: true } },
-            report: true
-          }
         }
       },
       orderBy: { createdAt: 'desc' }
     });
-    res.json(alarms.map((alarm: any) => ({
-      ...alarm,
-      diagnosis: generateDiagnosis(alarm)
-    })));
+
+    res.json(attachExpertDiagnosesToAlarms(alarms as any[], contextAlarms as any[]));
   } catch (error) {
+    console.error('Fetch incidents error:', error);
     res.status(500).json({ error: 'Failed to fetch alarms' });
   }
 });

@@ -1,7 +1,6 @@
 import React from 'react';
 import { X, Thermometer, AlertCircle, Ticket, Server, Activity } from 'lucide-react';
 import Badge from '../ui/Badge';
-import { useTelemetryStore } from '../../store/useTelemetryStore';
 
 interface RoomDetailsPanelProps {
   room: any;
@@ -9,7 +8,6 @@ interface RoomDetailsPanelProps {
 }
 
 const RoomDetailsPanel: React.FC<RoomDetailsPanelProps> = ({ room, onClose }) => {
-  const equipmentData = useTelemetryStore(state => state.equipmentData);
   const equipments = room.equipments || [];
 
   const healthReasons: { text: string; severity: 'warning' | 'critical' | 'offline' }[] = [];

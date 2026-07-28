@@ -1,18 +1,86 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Search, Book, ChevronRight, X, Plus } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Search, Book, X, Plus, FileText, Link as LinkIcon } from 'lucide-react';
 import { useCreateKnowledgeArticle, useKnowledgeBase } from '../../hooks/useKnowledge';
 import { useAppStore } from '../../store/useAppStore';
 
+const unique = (items: string[]) => [...new Set(items.filter(Boolean))].sort((a, b) => a.localeCompare(b));
+
+const asText = (value: unknown) => String(value || '').toLowerCase();
+
+const fieldMatches = (items: string[] | undefined, query: string) => {
+  if (!query) return true;
+  return (items || []).some((item) => item.toLowerCase().includes(query));
+};
+
 const KnowledgeCenter = () => {
-  const [search, setSearch] = useState('');
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get('search') || '');
+  const [category, setCategory] = useState('All Articles');
+  const [equipment, setEquipment] = useState('');
+  const [room, setRoom] = useState('');
+  const [failureType, setFailureType] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
   const { data: knowledgeBase, isLoading } = useKnowledgeBase();
   const { mutate: createArticle, isPending: isCreating } = useCreateKnowledgeArticle();
   const { user } = useAppStore();
   const [formError, setFormError] = useState<string | null>(null);
 
+  const articles = knowledgeBase || [];
   const canCreate = user?.role === 'Super Admin' || user?.role === 'Engineer';
+
+  useEffect(() => {
+    const incomingSearch = searchParams.get('search');
+    if (incomingSearch) setSearch(incomingSearch);
+  }, [searchParams]);
+
+  const categories = useMemo(() => ['All Articles', ...unique(articles.map((article: any) => article.category))], [articles]);
+  const equipmentOptions = useMemo(() => unique(articles.flatMap((article: any) => article.relatedEquipment || article.tags || [])), [articles]);
+  const roomOptions = useMemo(() => unique(articles.flatMap((article: any) => article.rooms || [])), [articles]);
+  const failureTypeOptions = useMemo(() => unique(articles.map((article: any) => article.failureType || article.category)), [articles]);
+
+  const filteredArticles = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const selectedDate = dateFrom ? new Date(dateFrom).getTime() : null;
+
+    return articles.filter((article: any) => {
+      const haystack = [
+        article.title,
+        article.category,
+        article.problem,
+        article.content,
+        article.ruleId,
+        article.faultId,
+        ...(article.tags || []),
+        ...(article.symptoms || []),
+        ...(article.causes || []),
+        ...(article.resolution || []),
+        ...(article.relatedEquipment || []),
+        ...(article.rooms || [])
+      ].join(' ').toLowerCase();
+
+      if (category !== 'All Articles' && article.category !== category) return false;
+      if (query && !haystack.includes(query)) return false;
+      if (!fieldMatches(article.relatedEquipment || article.tags, equipment.toLowerCase())) return false;
+      if (!fieldMatches(article.rooms, room.toLowerCase())) return false;
+      if (failureType && asText(article.failureType || article.category) !== failureType.toLowerCase()) return false;
+      if (selectedDate && new Date(article.createdAt).getTime() < selectedDate) return false;
+      return true;
+    });
+  }, [articles, category, dateFrom, equipment, failureType, room, search]);
+
+  const selectedArticle = useMemo(() => {
+    return filteredArticles.find((article: any) => article.id === selectedArticleId) || filteredArticles[0];
+  }, [filteredArticles, selectedArticleId]);
+
+  useEffect(() => {
+    if (selectedArticle && selectedArticle.id !== selectedArticleId) {
+      setSelectedArticleId(selectedArticle.id);
+    }
+  }, [selectedArticle, selectedArticleId]);
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -34,7 +102,7 @@ const KnowledgeCenter = () => {
     <div className="h-full flex flex-col space-y-6 relative">
       {canCreate && (
         <div className="flex justify-end">
-          <button 
+          <button
             onClick={() => setIsModalOpen(true)}
             className="bg-primary text-on-primary px-4 py-2 rounded-md font-sans font-medium hover:bg-primary-fixed-dim transition-colors flex items-center gap-2"
           >
@@ -43,74 +111,139 @@ const KnowledgeCenter = () => {
         </div>
       )}
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-0">
-        
-        {/* Categories Sidebar */}
-        <div className="col-span-1 bg-bg-surface border border-border-subtle rounded-lg p-6 flex flex-col h-full">
+      <div className="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-6 min-h-0">
+        <aside className="xl:col-span-3 bg-bg-surface border border-border-subtle rounded-lg p-6 flex flex-col h-full min-h-0">
           <h3 className="text-sm font-mono text-on-surface-variant uppercase tracking-wider mb-4">Categories</h3>
-          <ul className="space-y-2">
-            <li className="flex items-center justify-between text-sm font-sans font-medium text-primary bg-bg-secondary p-2 rounded-md cursor-pointer">
-              <span>All Articles</span>
-              <span className="text-xs bg-background px-2 py-0.5 rounded text-on-surface-variant">{knowledgeBase?.length || 0}</span>
-            </li>
-            <li className="flex items-center justify-between text-sm font-sans text-on-surface hover:bg-bg-secondary p-2 rounded-md cursor-pointer transition-colors">
-              <span>Power Systems</span>
-            </li>
-            <li className="flex items-center justify-between text-sm font-sans text-on-surface hover:bg-bg-secondary p-2 rounded-md cursor-pointer transition-colors">
-              <span>Cooling & HVAC</span>
-            </li>
-            <li className="flex items-center justify-between text-sm font-sans text-on-surface hover:bg-bg-secondary p-2 rounded-md cursor-pointer transition-colors">
-              <span>Network & Telemetry</span>
-            </li>
+          <ul className="space-y-2 overflow-y-auto pr-1">
+            {categories.map((item) => (
+              <li key={item}>
+                <button
+                  type="button"
+                  onClick={() => setCategory(item)}
+                  className={`w-full flex items-center justify-between text-sm p-2 rounded-md transition-colors ${category === item ? 'font-medium text-primary bg-bg-secondary' : 'text-on-surface hover:bg-bg-secondary'}`}
+                >
+                  <span className="truncate">{item}</span>
+                  <span className="text-xs bg-background px-2 py-0.5 rounded text-on-surface-variant">
+                    {item === 'All Articles' ? articles.length : articles.filter((article: any) => article.category === item).length}
+                  </span>
+                </button>
+              </li>
+            ))}
           </ul>
-        </div>
+        </aside>
 
-        {/* Content Area */}
-        <div className="col-span-1 lg:col-span-3 bg-bg-surface border border-border-subtle rounded-lg p-6 flex flex-col h-full">
-          
-          <div className="relative mb-6">
+        <section className="xl:col-span-4 bg-bg-surface border border-border-subtle rounded-lg p-6 flex flex-col h-full min-h-0">
+          <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
-            <input 
-              type="text" 
-              placeholder="Search SOPs, recovery guides, or equipment manuals..." 
+            <input
+              type="text"
+              placeholder="Search problems, symptoms, rules, tickets..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full bg-background border border-border-subtle rounded-md pl-10 pr-4 py-3 text-sm font-sans focus:outline-none focus:border-primary transition-colors text-on-surface placeholder:text-on-surface-variant"
             />
           </div>
 
-          <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
+            <select value={equipment} onChange={(event) => setEquipment(event.target.value)} className="bg-background border border-border-subtle rounded-md px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-primary">
+              <option value="">Equipment</option>
+              {equipmentOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+            </select>
+            <select value={room} onChange={(event) => setRoom(event.target.value)} className="bg-background border border-border-subtle rounded-md px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-primary">
+              <option value="">Room</option>
+              {roomOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+            </select>
+            <select value={failureType} onChange={(event) => setFailureType(event.target.value)} className="bg-background border border-border-subtle rounded-md px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-primary">
+              <option value="">Failure Type</option>
+              {failureTypeOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+            </select>
+            <input value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} type="date" className="bg-background border border-border-subtle rounded-md px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-primary" />
+          </div>
+
+          <div className="flex-1 overflow-y-auto space-y-3 pr-2">
             {isLoading ? (
               <div className="text-on-surface-variant text-sm">Loading articles...</div>
-            ) : knowledgeBase?.filter((kb: any) => {
-              const query = search.toLowerCase();
-              return kb.title.toLowerCase().includes(query)
-                || kb.category.toLowerCase().includes(query)
-                || kb.tags?.some((tag: string) => tag.toLowerCase().includes(query));
-            }).map((kb: any) => (
-              <div key={kb.id} className="bg-background border border-border-subtle rounded-md p-4 flex items-center justify-between hover:border-primary cursor-pointer transition-colors group">
+            ) : filteredArticles.length === 0 ? (
+              <div className="text-on-surface-variant text-sm border border-dashed border-border-subtle rounded-lg p-5">No articles match the selected filters.</div>
+            ) : filteredArticles.map((kb: any) => (
+              <button
+                key={kb.id}
+                type="button"
+                onClick={() => setSelectedArticleId(kb.id)}
+                className={`w-full text-left bg-background border rounded-md p-4 transition-colors group ${selectedArticle?.id === kb.id ? 'border-primary' : 'border-border-subtle hover:border-primary'}`}
+              >
                 <div className="flex items-start gap-4">
                   <div className="p-2 bg-bg-secondary rounded-md group-hover:bg-primary/10 transition-colors">
                     <Book className="w-5 h-5 text-on-surface-variant group-hover:text-primary transition-colors" />
                   </div>
-                  <div>
-                    <h4 className="font-sans font-medium text-on-surface mb-1 group-hover:text-primary transition-colors">{kb.title}</h4>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs font-mono text-on-surface-variant">{kb.id.substring(0,8)}</span>
-                      <span className="text-xs font-sans text-on-surface-variant bg-bg-secondary px-2 py-0.5 rounded">{kb.category}</span>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      {kb.ruleId && <span className="text-[11px] font-mono text-primary bg-primary/10 border border-primary/20 rounded px-1.5 py-0.5">{kb.ruleId}</span>}
+                      <span className="text-[11px] font-mono text-on-surface-variant bg-bg-secondary px-1.5 py-0.5 rounded">{kb.category}</span>
                     </div>
-                    <p className="text-xs text-on-surface-variant mt-2 line-clamp-2">{kb.content}</p>
+                    <h4 className="font-sans font-medium text-on-surface group-hover:text-primary transition-colors line-clamp-2">{kb.title}</h4>
+                    <p className="text-xs text-on-surface-variant mt-2 line-clamp-2">{kb.problem || kb.content}</p>
                   </div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
+              </button>
             ))}
           </div>
-          
-        </div>
+        </section>
+
+        <section className="xl:col-span-5 bg-bg-surface border border-border-subtle rounded-lg p-6 flex flex-col h-full min-h-0">
+          {!selectedArticle ? (
+            <div className="flex-1 flex items-center justify-center text-on-surface-variant">Select an article.</div>
+          ) : (
+            <div className="flex-1 overflow-y-auto pr-2 space-y-6">
+              <div className="border-b border-border-subtle pb-5">
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {selectedArticle.ruleId && <span className="text-xs font-mono text-primary bg-primary/10 border border-primary/30 rounded px-2 py-1">{selectedArticle.ruleId}</span>}
+                  {selectedArticle.faultId && <span className="text-xs font-mono text-on-surface-variant bg-background border border-border-subtle rounded px-2 py-1">{selectedArticle.faultId}</span>}
+                  <span className="text-xs font-mono text-on-surface-variant bg-background border border-border-subtle rounded px-2 py-1">{selectedArticle.failureType || selectedArticle.category}</span>
+                </div>
+                <h2 className="text-xl font-display font-bold text-on-surface leading-tight">{selectedArticle.title}</h2>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-mono text-on-surface-variant uppercase tracking-wider mb-2">Problem</h3>
+                <p className="text-sm text-on-surface leading-relaxed">{selectedArticle.problem || selectedArticle.content}</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ArticleList title="Symptoms" items={selectedArticle.symptoms} />
+                <ArticleList title="Cause" items={selectedArticle.causes} />
+              </div>
+
+              <ArticleList title="Resolution" items={selectedArticle.resolution} numbered />
+              <ArticleList title="Related Equipment" items={selectedArticle.relatedEquipment} />
+              <ArticleList title="Engineer Notes" items={selectedArticle.engineerNotes} />
+              <ArticleList title="Similar Cases" items={selectedArticle.similarCases} />
+
+              <div>
+                <h3 className="text-sm font-mono text-on-surface-variant uppercase tracking-wider mb-3">Related Tickets</h3>
+                {(selectedArticle.relatedTickets || []).length === 0 ? (
+                  <p className="text-sm text-on-surface-variant">No related tickets yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedArticle.relatedTickets.map((ticket: any) => (
+                      <div key={ticket.id} className="bg-background border border-border-subtle rounded-md p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-on-surface truncate">{ticket.title}</p>
+                            <p className="text-xs text-on-surface-variant mt-1 truncate">{ticket.site || 'Site'} / {ticket.room || 'Room'} / {ticket.equipment || 'Equipment'}</p>
+                          </div>
+                          <span className="text-xs font-mono text-on-surface-variant shrink-0">{ticket.id.substring(0, 8)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
       </div>
 
-      {/* Create Article Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-bg-surface border border-border-subtle rounded-lg w-full max-w-3xl shadow-xl flex flex-col max-h-[90vh]">
@@ -136,16 +269,13 @@ const KnowledgeCenter = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-on-surface mb-1">Tags (comma separated)</label>
+                  <label className="block text-sm font-medium text-on-surface mb-1">Tags</label>
                   <input name="tags" type="text" className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface focus:outline-none focus:border-primary" placeholder="ups, emergency, power" />
                 </div>
               </div>
               <div className="flex-1 flex flex-col min-h-[300px]">
-                <label className="block text-sm font-medium text-on-surface mb-1 flex justify-between">
-                  <span>Content (Markdown format)</span>
-                  <span className="text-xs text-on-surface-variant">Use # for headings, * for lists</span>
-                </label>
-                <textarea required name="content" className="flex-1 w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface font-mono text-sm focus:outline-none focus:border-primary" placeholder="# Context\nDescribe the context...\n\n## Resolution\nSteps to resolve..."></textarea>
+                <label className="block text-sm font-medium text-on-surface mb-1">Content</label>
+                <textarea required name="content" className="flex-1 w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface font-mono text-sm focus:outline-none focus:border-primary" placeholder="# Context&#10;Describe the context...&#10;&#10;## Resolution&#10;Steps to resolve..."></textarea>
               </div>
               {formError && <div className="text-sm text-status-warning">{formError}</div>}
               <div className="flex justify-end gap-3 pt-4 border-t border-border-subtle mt-4">
@@ -157,6 +287,27 @@ const KnowledgeCenter = () => {
             </form>
           </div>
         </div>
+      )}
+    </div>
+  );
+};
+
+const ArticleList = ({ title, items, numbered = false }: { title: string; items?: string[]; numbered?: boolean }) => {
+  const visibleItems = (items || []).filter(Boolean);
+  const ListTag = numbered ? 'ol' : 'ul';
+
+  return (
+    <div className="bg-background border border-border-subtle rounded-lg p-4">
+      <h3 className="text-sm font-mono text-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-2">
+        {numbered ? <FileText className="w-4 h-4" /> : <LinkIcon className="w-4 h-4" />}
+        {title}
+      </h3>
+      {visibleItems.length === 0 ? (
+        <p className="text-sm text-on-surface-variant">No entries yet.</p>
+      ) : (
+        <ListTag className={`${numbered ? 'list-decimal' : 'list-disc'} list-inside text-sm text-on-surface space-y-1`}>
+          {visibleItems.map((item) => <li key={item}>{item}</li>)}
+        </ListTag>
       )}
     </div>
   );

@@ -39,6 +39,13 @@ const Topbar = () => {
         };
       }
 
+      if (section === 'incidents') {
+        return {
+          title: `${siteName} Incident Center`,
+          subtitle: 'Site alarms, expert diagnosis, and ticket escalation.'
+        };
+      }
+
       if (section === 'tickets') {
         return {
           title: `${siteName} Tickets`,
