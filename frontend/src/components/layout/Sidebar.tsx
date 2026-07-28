@@ -1,11 +1,20 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Map, Activity, Calendar, FileText, Settings, ShieldAlert, Cpu } from 'lucide-react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Map, Activity, Calendar, FileText, Settings, ShieldAlert, Cpu, LogOut } from 'lucide-react';
+import { useAppStore } from '../../store/useAppStore';
 
 const Sidebar = () => {
+  const { logout } = useAppStore();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   return (
     <aside className="w-[280px] bg-bg-secondary border-r border-border-subtle h-screen flex flex-col fixed left-0 top-0">
-      <div className="h-16 flex items-center px-6 border-b border-border-subtle">
+      <div className="h-16 flex items-center px-6 border-b border-border-subtle shrink-0">
         <h1 className="text-primary font-display font-bold text-xl tracking-tight">Djezzy SSOP</h1>
       </div>
       
@@ -59,11 +68,18 @@ const Sidebar = () => {
         </NavLink>
       </nav>
       
-      <div className="p-4 border-t border-border-subtle">
+      <div className="p-4 border-t border-border-subtle flex flex-col gap-1 shrink-0">
         <NavLink to="/settings" className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm transition-colors ${isActive ? 'bg-bg-surface text-primary' : 'text-on-surface hover:bg-bg-surface'}`}>
           <Settings className="w-5 h-5" />
           <span>Settings</span>
         </NavLink>
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-md font-sans text-sm text-on-surface-variant hover:bg-status-critical/10 hover:text-status-critical transition-colors"
+        >
+          <LogOut className="w-5 h-5" />
+          <span>Log out</span>
+        </button>
       </div>
     </aside>
   );

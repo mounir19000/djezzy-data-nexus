@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import authRoutes from './routes/auth';
+import notificationRoutes from './routes/notifications';
 import { startTelemetrySimulation } from './services/telemetrySimulator';
 
 dotenv.config();
@@ -25,6 +26,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.get('/api/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'healthy', message: 'Djezzy SSOP API is running' });
 });

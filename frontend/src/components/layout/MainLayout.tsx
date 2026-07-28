@@ -6,7 +6,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useSocket } from '../../hooks/useSocket';
 
 const MainLayout = () => {
-  const { isSidebarOpen } = useAppStore();
+  const { isSidebarOpen } = useAppStore((state: any) => state);
 
   // Initialize real-time telemetry connection
   useSocket();
