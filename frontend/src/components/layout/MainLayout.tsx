@@ -3,6 +3,7 @@ import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import { useAppStore } from '../../store/useAppStore';
 import { useSocket } from '../../hooks/useSocket';
+import SimulationControl from '../common/SimulationControl';
 
 const MainLayout = () => {
   const { isSidebarOpen } = useAppStore((state: any) => state);
@@ -23,6 +24,8 @@ const MainLayout = () => {
           </div>
         </main>
       </div>
+      
+      <SimulationControl />
     </div>
   );
 };
