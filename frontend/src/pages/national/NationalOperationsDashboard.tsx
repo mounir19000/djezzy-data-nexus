@@ -36,6 +36,21 @@ const NationalOperationsDashboard = () => {
         <KPICard title="Open Tickets" value={isLoading ? '...' : metrics?.openTickets} icon={<Ticket className="w-5 h-5" />} />
       </div>
 
+      <div className="bg-bg-surface border border-border-subtle rounded-lg p-6">
+        <h3 className="text-lg font-sans font-medium text-on-surface mb-4">Site Health Ranking</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {rankedSites.map((site: any) => (
+            <div key={site.id} className="bg-background border border-border-subtle rounded-md p-4 flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-medium text-on-surface">{site.name}</h4>
+                <p className="text-xs font-mono text-on-surface-variant">{site.location}</p>
+              </div>
+              <Badge status={statusForHealth(site.overallHealth)}>{site.overallHealth}%</Badge>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Map */}
         <div className="lg:col-span-2 bg-bg-surface border border-border-subtle rounded-lg p-6 min-h-[500px] flex flex-col">
@@ -82,21 +97,6 @@ const NationalOperationsDashboard = () => {
               </div>
             ))}
           </div>
-        </div>
-      </div>
-
-      <div className="bg-bg-surface border border-border-subtle rounded-lg p-6">
-        <h3 className="text-lg font-sans font-medium text-on-surface mb-4">Site Health Ranking</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {rankedSites.map((site: any) => (
-            <div key={site.id} className="bg-background border border-border-subtle rounded-md p-4 flex items-center justify-between">
-              <div>
-                <h4 className="text-sm font-medium text-on-surface">{site.name}</h4>
-                <p className="text-xs font-mono text-on-surface-variant">{site.location}</p>
-              </div>
-              <Badge status={statusForHealth(site.overallHealth)}>{site.overallHealth}%</Badge>
-            </div>
-          ))}
         </div>
       </div>
       

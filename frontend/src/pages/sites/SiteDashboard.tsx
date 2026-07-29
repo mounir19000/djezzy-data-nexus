@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
 import { useSiteDashboard } from '../../hooks/useSites';
+import MaintenanceScheduler from '../../components/maintenance/MaintenanceScheduler';
 
 const statusForScore = (score: number): 'healthy' | 'warning' | 'critical' => {
   if (score >= 90) return 'healthy';
@@ -235,6 +236,14 @@ const SiteDashboard = () => {
           </div>
         </div>
       </div>
+
+      <section>
+        <div className="mb-4">
+          <h3 className="text-xl font-sans font-medium text-on-surface">Maintenance Management</h3>
+          <p className="text-sm text-on-surface-variant mt-1">Schedule and manage device maintenance.</p>
+        </div>
+        <MaintenanceScheduler siteId={site.id} />
+      </section>
     </div>
   );
 };

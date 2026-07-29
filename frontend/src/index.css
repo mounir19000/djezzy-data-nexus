@@ -7,3 +7,47 @@
     @apply bg-background text-on-surface antialiased;
   }
 }
+
+/* FullCalendar Overrides for Dark Theme */
+@layer components {
+  .fc {
+    --fc-page-bg-color: transparent;
+    --fc-neutral-bg-color: #242932;
+    --fc-neutral-text-color: #e2e2e8;
+    --fc-border-color: #334155;
+
+    --fc-button-text-color: #e2e2e8;
+    --fc-button-bg-color: #242932;
+    --fc-button-border-color: #334155;
+    --fc-button-hover-bg-color: #334155;
+    --fc-button-hover-border-color: #334155;
+    --fc-button-active-bg-color: #fff2d1;
+    --fc-button-active-border-color: #fff2d1;
+    --fc-button-active-text-color: #3b2f00;
+
+    --fc-event-bg-color: #fff2d1;
+    --fc-event-border-color: #fff2d1;
+    --fc-event-text-color: #3b2f00;
+    
+    --fc-today-bg-color: rgba(255, 242, 209, 0.1);
+    
+    @apply font-sans;
+  }
+  
+  .fc-theme-standard td, .fc-theme-standard th, .fc-theme-standard .fc-scrollgrid {
+    @apply border-border-subtle;
+  }
+  
+  .fc-col-header-cell-cushion {
+    @apply text-on-surface-variant font-medium py-2;
+  }
+  
+  .fc-daygrid-day-number {
+    @apply text-on-surface text-sm;
+  }
+  
+  .fc-event {
+    @apply rounded shadow-sm text-xs border-none px-1 py-0.5;
+  }
+}
+
