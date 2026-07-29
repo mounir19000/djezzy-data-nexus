@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Bell, Check, CheckCheck, Inbox } from 'lucide-react';
+import { API_BASE_URL } from '../../lib/api';
 
 interface Notification {
   id: string;
@@ -12,7 +13,7 @@ const fetchNotifications = async () => {
   const token = localStorage.getItem('djezzy_token');
   if (!token) return [];
 
-  const res = await fetch('http://localhost:4000/api/notifications', {
+  const res = await fetch(`${API_BASE_URL}/api/notifications`, {
     headers: { Authorization: `Bearer ${token}` }
   });
 
@@ -43,7 +44,7 @@ const NotificationsPage = () => {
 
   const markAsRead = async (id: string) => {
     const token = localStorage.getItem('djezzy_token');
-    await fetch(`http://localhost:4000/api/notifications/${id}/read`, {
+    await fetch(`${API_BASE_URL}/api/notifications/${id}/read`, {
       method: 'PUT',
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -53,7 +54,7 @@ const NotificationsPage = () => {
 
   const markAllAsRead = async () => {
     const token = localStorage.getItem('djezzy_token');
-    await fetch('http://localhost:4000/api/notifications/read-all', {
+    await fetch(`${API_BASE_URL}/api/notifications/read-all`, {
       method: 'PUT',
       headers: { Authorization: `Bearer ${token}` }
     });

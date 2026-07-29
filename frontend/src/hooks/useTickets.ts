@@ -1,12 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { API_BASE_URL } from '../lib/api';
 
 const fetchTickets = async (siteId?: string) => {
   const token = localStorage.getItem('djezzy_token');
   const params = new URLSearchParams();
   if (siteId) params.set('siteId', siteId);
   const query = params.toString();
-  const res = await fetch(`http://localhost:4000/api/tickets${query ? `?${query}` : ''}`, {
+  const res = await fetch(`${API_BASE_URL}/api/tickets${query ? `?${query}` : ''}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   if (!res.ok) throw new Error('Failed to fetch tickets');
@@ -41,7 +42,7 @@ export const useUpdateTicketStatus = () => {
   return useMutation({
     mutationFn: async ({ id, status, assignedTo }: { id: string, status: string, assignedTo?: string }) => {
       const token = localStorage.getItem('djezzy_token');
-      const res = await fetch(`http://localhost:4000/api/tickets/${id}/status`, {
+      const res = await fetch(`${API_BASE_URL}/api/tickets/${id}/status`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -82,7 +83,7 @@ export const useSubmitTicketReport = () => {
       };
     }) => {
       const token = localStorage.getItem('djezzy_token');
-      const res = await fetch(`http://localhost:4000/api/tickets/${id}/report`, {
+      const res = await fetch(`${API_BASE_URL}/api/tickets/${id}/report`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -112,7 +113,7 @@ export const useDeleteTicket = () => {
   return useMutation({
     mutationFn: async (id: string) => {
       const token = localStorage.getItem('djezzy_token');
-      const res = await fetch(`http://localhost:4000/api/tickets/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/tickets/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -144,7 +145,7 @@ export const useCreateTicket = () => {
       dueDate?: string;
     }) => {
       const token = localStorage.getItem('djezzy_token');
-      const res = await fetch('http://localhost:4000/api/tickets', {
+      const res = await fetch(`${API_BASE_URL}/api/tickets`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { API_BASE_URL } from '../lib/api';
 
 const fetchKnowledge = async () => {
   const token = localStorage.getItem('djezzy_token');
-  const res = await fetch('http://localhost:4000/api/knowledge', {
+  const res = await fetch(`${API_BASE_URL}/api/knowledge`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   if (!res.ok) throw new Error('Failed to fetch KB articles');
@@ -26,7 +27,7 @@ export const useCreateKnowledgeArticle = () => {
       content: string;
     }) => {
       const token = localStorage.getItem('djezzy_token');
-      const res = await fetch('http://localhost:4000/api/knowledge', {
+      const res = await fetch(`${API_BASE_URL}/api/knowledge`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

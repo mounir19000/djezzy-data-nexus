@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
+import { API_BASE_URL } from '../lib/api';
 
 const fetchSites = async () => {
   const token = localStorage.getItem('djezzy_token');
-  const res = await fetch('http://localhost:4000/api/sites', {
+  const res = await fetch(`${API_BASE_URL}/api/sites`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   if (!res.ok) throw new Error('Failed to fetch sites');
@@ -18,7 +19,7 @@ export const useSites = () => {
 
 const fetchSite = async (siteId: string) => {
   const token = localStorage.getItem('djezzy_token');
-  const res = await fetch(`http://localhost:4000/api/sites/${siteId}`, {
+  const res = await fetch(`${API_BASE_URL}/api/sites/${siteId}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   if (!res.ok) throw new Error('Failed to fetch site');
@@ -35,7 +36,7 @@ export const useSite = (siteId?: string) => {
 
 const fetchSiteDashboard = async (siteId: string) => {
   const token = localStorage.getItem('djezzy_token');
-  const res = await fetch(`http://localhost:4000/api/sites/${siteId}/dashboard`, {
+  const res = await fetch(`${API_BASE_URL}/api/sites/${siteId}/dashboard`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   if (!res.ok) throw new Error('Failed to fetch site dashboard');

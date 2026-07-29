@@ -2,7 +2,6 @@ import { Link, useParams } from 'react-router-dom';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
 import { useSiteDashboard } from '../../hooks/useSites';
-import MaintenanceScheduler from '../../components/maintenance/MaintenanceScheduler';
 
 const statusForScore = (score: number): 'healthy' | 'warning' | 'critical' => {
   if (score >= 90) return 'healthy';
@@ -68,7 +67,7 @@ const SiteDashboard = () => {
     );
   }
 
-  const { site, health, summary, alarms, tickets, maintenance } = data;
+  const { site, health, summary, alarms, tickets } = data;
   const healthStatus = statusForScore(health.score);
   const healthTone = toneForStatus[healthStatus];
   const healthCauses = uniqueItems(health.causes || []);
@@ -147,7 +146,7 @@ const SiteDashboard = () => {
         </div>
       </section>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Open Tickets */}
         <div className="bg-bg-surface border border-border-subtle rounded-lg p-6 flex flex-col">
           <div className="flex items-center justify-between mb-5">
@@ -178,35 +177,7 @@ const SiteDashboard = () => {
           </div>
         </div>
 
-        {/* Maintenance */}
-        <div className="bg-bg-surface border border-border-subtle rounded-lg p-6 flex flex-col">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h3 className="text-lg font-sans font-medium text-on-surface">Maintenance</h3>
-              <p className="text-sm text-on-surface-variant mt-1">Upcoming scheduled tasks.</p>
-            </div>
-            <Link to={`/operations?siteId=${site.id}`} className="text-xs text-primary hover:underline">Calendar</Link>
-          </div>
-          <div className="space-y-3 flex-1">
-            {maintenance.filter((m: any) => m.status !== 'completed').slice(0, 5).length === 0 ? (
-              <div className="bg-background border border-border-subtle rounded-md p-4 text-sm text-on-surface-variant flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-status-healthy" /> No upcoming maintenance.
-              </div>
-            ) : maintenance.filter((m: any) => m.status !== 'completed').slice(0, 5).map((task: any) => (
-              <div key={task.id} className="bg-background border border-border-subtle rounded-md p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h4 className="text-sm font-medium text-on-surface truncate">{task.title}</h4>
-                    <p className="text-xs text-on-surface-variant mt-1 truncate">
-                      {new Date(task.scheduledDate).toLocaleDateString()} • {task.equipment?.name}
-                    </p>
-                  </div>
-                  <Badge status="healthy">{task.status}</Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+
 
         {/* Alarms */}
         <div className="bg-bg-surface border border-border-subtle rounded-lg p-6 flex flex-col">
@@ -237,13 +208,6 @@ const SiteDashboard = () => {
         </div>
       </div>
 
-      <section>
-        <div className="mb-4">
-          <h3 className="text-xl font-sans font-medium text-on-surface">Maintenance Management</h3>
-          <p className="text-sm text-on-surface-variant mt-1">Schedule and manage device maintenance.</p>
-        </div>
-        <MaintenanceScheduler siteId={site.id} />
-      </section>
     </div>
   );
 };

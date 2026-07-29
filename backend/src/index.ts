@@ -1,5 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
-import cors from 'cors';
+import cors, { CorsOptions } from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
@@ -22,20 +22,56 @@ dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
+const PORT = Number(process.env.PORT || 4000);
+const HOST = process.env.HOST || '0.0.0.0';
+const configuredFrontendOrigins = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const isLocalNetworkOrigin = (origin: string) => {
+  try {
+    const { hostname } = new URL(origin);
+    return (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '0.0.0.0' ||
+      hostname.startsWith('10.') ||
+      hostname.startsWith('192.168.') ||
+      /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname)
+    );
+  } catch {
+    return false;
+  }
+};
+
+const corsOptions: CorsOptions = {
+  origin(origin, callback) {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    if (configuredFrontendOrigins.length > 0) {
+      callback(null, configuredFrontendOrigins.includes(origin));
+      return;
+    }
+
+    callback(null, isLocalNetworkOrigin(origin));
+  },
+  credentials: true,
+};
+
 const io = new Server(httpServer, {
   cors: {
-    origin: '*',
+    origin: configuredFrontendOrigins.length > 0 ? configuredFrontendOrigins : true,
   }
 });
 app.set('io', io);
-const PORT = process.env.PORT || 4000;
 
 // Middleware
 app.use(helmet());
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true,
-}));
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Routes
@@ -73,6 +109,6 @@ io.on('connection', (socket) => {
 startTelemetrySimulation(io);
 startMaintenanceCron();
 
-httpServer.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+httpServer.listen(PORT, HOST, () => {
+  console.log(`Server running on http://${HOST}:${PORT}`);
 });
