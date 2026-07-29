@@ -15,9 +15,9 @@ const NotFoundPage = () => {
             <SearchX className="w-8 h-8 text-status-critical" />
           </div>
           <div className="relative z-10 mb-4">
-            <h2 className="text-3xl font-display font-bold text-on-surface mt-2">Looks like you took a wrong turn!</h2>
+            <h2 className="text-3xl font-display font-bold text-on-surface mt-2">Cette page est introuvable.</h2>
             <p className="text-on-surface-variant mt-3 text-sm max-w-sm mx-auto">
-              Don't worry, even the best explorers get lost sometimes. Let's get you back to safe territory!
+              Aucun souci, retournons vers une zone connue de la plateforme.
             </p>
           </div>
         </div>
@@ -29,14 +29,14 @@ const NotFoundPage = () => {
             className="flex-1 h-11 px-4 rounded-md border border-border-subtle text-on-surface hover:bg-bg-surface transition-colors inline-flex items-center justify-center gap-2 font-medium"
           >
             <ArrowLeft className="w-4 h-4 text-on-surface-variant" />
-            Go Back
+            Retour
           </button>
           <Link 
             to="/" 
             className="flex-1 h-11 px-4 rounded-md bg-primary text-on-primary hover:bg-primary-fixed-dim transition-colors inline-flex items-center justify-center gap-2 font-medium"
           >
             <Home className="w-4 h-4" />
-            Go Home
+            Accueil
           </Link>
         </div>
       </div>

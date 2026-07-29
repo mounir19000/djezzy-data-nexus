@@ -16,7 +16,7 @@ router.get('/rules', requireAuth, requireRole(['Super Admin']), async (req, res:
     });
     res.json(rules);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch rules' });
+    res.status(500).json({ error: 'Échec du chargement des règles' });
   }
 });
 
@@ -25,7 +25,7 @@ router.put('/rules/:id', requireAuth, requireRole(['Super Admin']), async (req: 
   try {
     const { threshold } = req.body;
     if (threshold === undefined) {
-      return res.status(400).json({ error: 'Threshold is required' });
+      return res.status(400).json({ error: 'Le seuil est requis' });
     }
     
     const rule = await prisma.expertRule.update({
@@ -34,7 +34,7 @@ router.put('/rules/:id', requireAuth, requireRole(['Super Admin']), async (req: 
     });
     res.json(rule);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update rule' });
+    res.status(500).json({ error: 'Échec de la mise à jour de la règle' });
   }
 });
 

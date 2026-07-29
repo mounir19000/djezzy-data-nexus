@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Thermometer, AlertCircle, Ticket, Server, Activity } from 'lucide-react';
 import Badge from '../ui/Badge';
+import { displayStatus, displayText } from '../../lib/frenchLabels';
 
 interface RoomDetailsPanelProps {
   room: any;
@@ -12,28 +13,28 @@ const RoomDetailsPanel: React.FC<RoomDetailsPanelProps> = ({ room, onClose }) =>
 
   const healthReasons: { text: string; severity: 'warning' | 'critical' | 'offline' }[] = [];
   if (room.temperature >= room.targetTemp) {
-    healthReasons.push({ text: `Temperature critical (${room.temperature.toFixed(1)}°C, Target: ${room.targetTemp}°C)`, severity: 'critical' });
+    healthReasons.push({ text: `Température critique (${room.temperature.toFixed(1)}°C, cible : ${room.targetTemp}°C)`, severity: 'critical' });
   } else if (room.temperature >= room.targetTemp * 0.8) {
-    healthReasons.push({ text: `Temperature elevated (${room.temperature.toFixed(1)}°C, Target: ${room.targetTemp}°C)`, severity: 'warning' });
+    healthReasons.push({ text: `Température élevée (${room.temperature.toFixed(1)}°C, cible : ${room.targetTemp}°C)`, severity: 'warning' });
   }
   
   if (room.activeAlarms > 0) {
-    healthReasons.push({ text: `${room.activeAlarms} active alarm(s) reported`, severity: 'critical' });
+    healthReasons.push({ text: `${room.activeAlarms} alarme(s) active(s) signalee(s)`, severity: 'critical' });
   }
   const offlineEq = equipments.filter((eq: any) => eq.status === 'offline');
   if (offlineEq.length > 0) {
-    healthReasons.push({ text: `${offlineEq.length} equipment(s) offline`, severity: 'offline' });
+    healthReasons.push({ text: `${offlineEq.length} équipement(s) hors ligne`, severity: 'offline' });
   }
 
   return (
     <div className="w-96 bg-bg-surface border-l border-border-subtle h-full flex flex-col">
       <div className="p-6 border-b border-border-subtle flex justify-between items-start">
         <div>
-          <h2 className="text-xl font-display font-bold text-on-surface">{room.name}</h2>
+          <h2 className="text-xl font-display font-bold text-on-surface">{displayText(room.name)}</h2>
           <div className="flex items-center gap-2 mt-2">
-            <Badge status={room.status}>{room.status.toUpperCase()}</Badge>
+            <Badge status={room.status}>{displayStatus(room.status, true)}</Badge>
             <span className="text-sm font-mono text-on-surface-variant">
-              Health: {Math.round(room.healthScore)}%
+              Santé : {Math.round(room.healthScore)}%
             </span>
           </div>
         </div>
@@ -47,7 +48,7 @@ const RoomDetailsPanel: React.FC<RoomDetailsPanelProps> = ({ room, onClose }) =>
           <div className="bg-bg-base border border-border-subtle rounded-lg p-4">
             <h3 className="text-sm font-bold text-on-surface mb-2 flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-on-surface-variant" />
-              Health Issues
+              Points de vigilance
             </h3>
             <ul className="space-y-2 mt-3">
               {healthReasons.map((reason, i) => {
@@ -72,18 +73,18 @@ const RoomDetailsPanel: React.FC<RoomDetailsPanelProps> = ({ room, onClose }) =>
           <div className="bg-bg-base rounded-lg p-4 border border-border-subtle">
             <div className="flex items-center gap-2 text-on-surface-variant mb-2">
               <Thermometer className="w-4 h-4" />
-              <span className="text-sm font-medium">Avg Temp</span>
+              <span className="text-sm font-medium">Temp. moyenne</span>
             </div>
             <div className="text-2xl font-mono text-on-surface">{room.temperature.toFixed(1)}°C</div>
-            <div className="text-xs text-on-surface-variant mt-1">Target: {room.targetTemp}°C</div>
+            <div className="text-xs text-on-surface-variant mt-1">Cible : {room.targetTemp}°C</div>
           </div>
           <div className="bg-bg-base rounded-lg p-4 border border-border-subtle">
             <div className="flex items-center gap-2 text-on-surface-variant mb-2">
               <Activity className="w-4 h-4" />
-              <span className="text-sm font-medium">Equipment</span>
+              <span className="text-sm font-medium">Équipements</span>
             </div>
             <div className="text-2xl font-mono text-on-surface">{room.equipmentCount}</div>
-            <div className="text-xs text-on-surface-variant mt-1">Total Devices</div>
+            <div className="text-xs text-on-surface-variant mt-1">Total appareils</div>
           </div>
         </div>
 
@@ -91,7 +92,7 @@ const RoomDetailsPanel: React.FC<RoomDetailsPanelProps> = ({ room, onClose }) =>
           <div className="flex-1 flex items-center justify-between p-3 rounded-lg border border-border-subtle bg-bg-base">
             <div className="flex items-center gap-2">
               <AlertCircle className={`w-5 h-5 ${room.activeAlarms > 0 ? 'text-status-critical' : 'text-status-healthy'}`} />
-              <span className="text-sm font-medium text-on-surface">Alarms</span>
+              <span className="text-sm font-medium text-on-surface">Alarmes</span>
             </div>
             <span className="font-mono font-bold text-on-surface">{room.activeAlarms}</span>
           </div>
@@ -105,7 +106,7 @@ const RoomDetailsPanel: React.FC<RoomDetailsPanelProps> = ({ room, onClose }) =>
         </div>
 
         <div>
-          <h3 className="text-sm font-sans font-medium text-on-surface mb-4">Equipment Details</h3>
+          <h3 className="text-sm font-sans font-medium text-on-surface mb-4">Détails des équipements</h3>
           <div className="space-y-3">
             {equipments.map((eq: any) => (
               <div key={eq.id} className="border border-border-subtle rounded-lg p-3 bg-bg-base flex items-center gap-2">
@@ -115,7 +116,7 @@ const RoomDetailsPanel: React.FC<RoomDetailsPanelProps> = ({ room, onClose }) =>
             ))}
             {equipments.length === 0 && (
               <div className="text-center text-sm text-on-surface-variant p-4 border border-dashed border-border-subtle rounded-lg">
-                No equipment data available.
+                Aucune donnée d’équipement disponible.
               </div>
             )}
           </div>

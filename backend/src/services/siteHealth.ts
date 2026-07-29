@@ -107,11 +107,11 @@ const alarmCausesForEquipment = (equipment: EquipmentLike[]) => equipment.flatMa
     const description = sentenceCase(alarm.description);
     return description.toLowerCase().includes(item.name.toLowerCase())
       ? description
-      : `${description} on ${item.name}`;
+      : `${description} sur ${item.name}`;
   })
 );
 
-const mainCause = (causes: string[]) => causes[0] || 'No active causes detected.';
+const mainCause = (causes: string[]) => causes[0] || 'Aucune cause active détectée.';
 
 const scorePhaseBalance = (unbalance: number) => {
   if (unbalance < 10) return 100;
@@ -124,12 +124,12 @@ const roomCauses = (room: RoomLike, temperature: number, score: number, targetTe
   const causes = alarmCausesForEquipment(equipment);
 
   if (temperature > targetTemp) {
-    causes.push(`${room.name} is running hot`);
+    causes.push(`${room.name} en température élevée`);
   } else if (score < 90) {
-    causes.push(`${room.name} temperature is rising`);
+    causes.push(`${room.name} température en hausse`);
   }
 
-  return causes.length > 0 ? causes : [`${room.name} is stable`];
+  return causes.length > 0 ? causes : [`${room.name} stable`];
 };
 
 const upsCauses = (
@@ -146,28 +146,28 @@ const upsCauses = (
   gridAlarms.forEach((alarm) => causes.push(sentenceCase(alarm.description)));
 
   if (typeof load === 'number' && load > 85) {
-    causes.push('UPS load is very high');
+    causes.push('Charge UPS très élevée');
   } else if (typeof load === 'number' && load >= 60) {
-    causes.push('UPS load is elevated');
+    causes.push('Charge UPS élevée');
   }
 
   if (typeof phaseUnbalance === 'number' && phaseUnbalance > 25) {
-    causes.push(`UPS output phases are severely unbalanced (${round(phaseUnbalance)}%).`);
+    causes.push(`Phases de sortie UPS fortement déséquilibrées (${round(phaseUnbalance)}%).`);
   } else if (typeof phaseUnbalance === 'number' && phaseUnbalance >= 20) {
-    causes.push(`UPS output phases are unbalanced (${round(phaseUnbalance)}%).`);
+    causes.push(`Phases de sortie UPS déséquilibrées (${round(phaseUnbalance)}%).`);
   }
 
   if (gridFailure && typeof batteryCapacity === 'number' && batteryCapacity < 20) {
-    causes.push('Battery reserve is almost depleted');
+    causes.push('Réserve batterie presque épuisée');
   } else if (!gridFailure && typeof batteryCapacity === 'number' && batteryCapacity < 95) {
-    causes.push('Battery reserve needs attention');
+    causes.push('Réserve batterie à surveiller');
   }
 
   if (typeof temperature === 'number' && temperature > 40) {
-    causes.push('UPS is running hot');
+    causes.push('UPS en température élevée');
   }
 
-  return causes.length > 0 ? causes : ['UPS is stable'];
+  return causes.length > 0 ? causes : ['UPS stable'];
 };
 
 export const calculateSiteHealth = (site: SiteLike, metrics: LatestMetricMap) => {
@@ -286,12 +286,12 @@ export const calculateSiteHealth = (site: SiteLike, metrics: LatestMetricMap) =>
 
   if (gridFailure) {
     score = Math.min(score, 50);
-    overrides.push('Grid power is unavailable.');
+    overrides.push('Alimentation secteur indisponible.');
   }
 
   if (imminentShutdown) {
     score = 5;
-    overrides.push('Battery reserve is almost depleted.');
+    overrides.push('Réserve batterie presque épuisée.');
   }
 
   const componentCauses = componentsForScore
@@ -303,7 +303,7 @@ export const calculateSiteHealth = (site: SiteLike, metrics: LatestMetricMap) =>
   return {
     score: round(score),
     status: statusFromScore(score),
-    method: weightedComponents.length > 0 ? 'PDF weighted Blida methodology' : 'Configured component average',
+    method: weightedComponents.length > 0 ? 'Methodologie pondérée Blida PDF' : 'Moyenne des composants configurés',
     components: componentsForScore.map((component) => ({
       ...component,
       score: round(component.score),
@@ -312,6 +312,6 @@ export const calculateSiteHealth = (site: SiteLike, metrics: LatestMetricMap) =>
     roomScores,
     ups: upsComponent,
     overrides,
-    causes: causes.length > 0 ? causes : ['No active causes detected.']
+    causes: causes.length > 0 ? causes : ['Aucune cause active détectée.']
   };
 };

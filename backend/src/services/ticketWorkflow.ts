@@ -6,6 +6,20 @@ import { AuthRequest } from '../middleware/auth';
 export const terminalStatuses = ['resolved', 'closed'];
 export const allowedStatuses = ['pending', 'assigned', 'inProgress', 'resolved', 'closed'];
 
+const ticketStatusLabels: Record<string, string> = {
+  pending: 'En attente',
+  assigned: 'Assigné',
+  inProgress: 'En cours',
+  resolved: 'Résolu',
+  closed: 'Clôturé'
+};
+
+const priorityLabels: Record<string, string> = {
+  low: 'Faible',
+  medium: 'Moyenne',
+  high: 'Haute'
+};
+
 export const ticketInclude = {
   assignee: { select: { id: true, firstName: true, lastName: true } },
   report: {
@@ -77,16 +91,16 @@ export const validateEngineerAssignee = async (assigneeId: string, siteId: strin
   });
 
   if (!assignee) {
-    return { valid: false, message: 'Assignee not found' };
+    return { valid: false, message: 'Assigné introuvable' };
   }
 
   if (assignee.role.name !== 'Engineer') {
-    return { valid: false, message: 'Tickets can only be assigned to engineers' };
+    return { valid: false, message: 'Les tickets ne peuvent être assignés qu’aux ingénieurs' };
   }
 
   const hasSiteAccess = assignee.siteAssignments.some((assignment) => assignment.siteId === siteId);
   if (!hasSiteAccess) {
-    return { valid: false, message: 'Engineer is not assigned to this site' };
+    return { valid: false, message: 'L’ingénieur n’est pas assigné à ce site' };
   }
 
   return { valid: true, message: null };
@@ -99,11 +113,11 @@ export const validateTicketStatusChange = (
   user: AuthRequest['user']
 ) => {
   if (!allowedStatuses.includes(nextStatus)) {
-    return 'Invalid status';
+    return 'Statut invalide';
   }
 
   if (user?.roleName === 'Site Operator' && terminalStatuses.includes(nextStatus)) {
-    return 'Site Operators cannot resolve or close tickets';
+    return 'Les opérateurs de site ne peuvent pas résoudre ou clôturer les tickets';
   }
 
   const transitions: Record<string, string[]> = {
@@ -115,31 +129,31 @@ export const validateTicketStatusChange = (
   };
 
   if (!transitions[ticket.status]?.includes(nextStatus)) {
-    return `Ticket cannot move from ${ticket.status} to ${nextStatus}`;
+    return `Le ticket ne peut pas passer de ${ticketStatusLabels[ticket.status] || ticket.status} à ${ticketStatusLabels[nextStatus] || nextStatus}`;
   }
 
   if (nextStatus !== 'pending' && !nextAssigneeId) {
-    return 'Assign the ticket to an engineer before moving it forward';
+    return 'Assignez le ticket à un ingénieur avant de le faire avancer';
   }
 
   if (terminalStatuses.includes(nextStatus) && !ticket.report) {
-    return 'Engineer response report is required before resolving or closing';
+    return 'Le rapport de réponse ingénieur est requis avant résolution ou clôture';
   }
 
   if (ticket.assignedTo && ticket.status !== nextStatus) {
     if (nextStatus === 'pending') {
       if (user?.roleName !== 'Super Admin') {
-        return 'Only a Super Admin can send an assigned ticket back to pending';
+        return 'Seul un Super administrateur peut renvoyer un ticket assigné vers En attente';
       }
     } else {
       if (user?.id !== ticket.assignedTo) {
-        return 'Only the assigned engineer can move this ticket';
+        return 'Seul l’ingénieur assigné peut déplacer ce ticket';
       }
     }
   }
 
   if (user?.roleName === 'Engineer' && nextAssigneeId && nextAssigneeId !== user.id) {
-    return 'Engineers can only progress tickets assigned to themselves';
+    return 'Les ingénieurs ne peuvent faire avancer que les tickets qui leur sont assignés';
   }
 
   return null;
@@ -200,7 +214,7 @@ export const createAutomaticTicketForAlarm = async (
     data: {
       alarmId: alarm.id,
       equipmentId: alarm.equipmentId,
-      title: `Respond to ${equipment.name}: ${alarm.description}`,
+      title: `Intervenir sur ${equipment.name} : ${alarm.description}`,
       status: 'pending',
       priority: diagnosis.priority || (alarm.severity === 'critical' ? 'high' : 'medium'),
       source: 'alarm_auto'
@@ -211,7 +225,7 @@ export const createAutomaticTicketForAlarm = async (
   if (siteId) {
     await notifyTicketRecipients(
       siteId,
-      `Auto-ticket ${ticket.id.substring(0, 8)} created for ${equipment.name}: ${alarm.description}`,
+      `Ticket automatique ${ticket.id.substring(0, 8)} créé pour ${equipment.name} : ${alarm.description}`,
       io
     );
   }
@@ -242,50 +256,50 @@ export const createIncidentKnowledgeArticle = async (ticketId: string) => {
   }) : null;
 
   const content = [
-    '# Incident Summary',
-    `Ticket: ${ticket.id}`,
-    `Site: ${ticket.equipment.room.site.name}`,
-    `Room: ${ticket.equipment.room.name}`,
-    `Equipment: ${ticket.equipment.name} (${ticket.equipment.type})`,
-    `Priority: ${ticket.priority}`,
-    `Assigned engineer: ${ticket.assignee ? `${ticket.assignee.firstName} ${ticket.assignee.lastName}` : 'Unassigned'}`,
-    `Engineer verdict: ${ticket.report ? (ticket.report.isFailure ? 'Confirmed failure' : 'False alarm / no failure') : 'No report'}`,
+    '# Synthèse de l’incident',
+    `Ticket : ${ticket.id}`,
+    `Site : ${ticket.equipment.room.site.name}`,
+    `Salle : ${ticket.equipment.room.name}`,
+    `Équipement : ${ticket.equipment.name} (${ticket.equipment.type})`,
+    `Priorité : ${priorityLabels[ticket.priority] || ticket.priority}`,
+    `Ingénieur assigné : ${ticket.assignee ? `${ticket.assignee.firstName} ${ticket.assignee.lastName}` : 'Non assigné'}`,
+    `Verdict ingénieur : ${ticket.report ? (ticket.report.isFailure ? 'Panne confirmée' : 'Fausse alarme / pas de panne') : 'Aucun rapport'}`,
     '',
-    '## Symptoms',
+    '## Symptômes',
     ticket.alarm?.description || ticket.title,
     '',
-    '## Diagnosis',
-    diagnosis?.problem || 'Manual intervention completed.',
+    '## Diagnostic',
+    diagnosis?.problem || 'Intervention manuelle terminée.',
     '',
-    '## Engineer Report',
+    '## Rapport ingénieur',
     ticket.report
       ? [
-        `Failure domain: ${ticket.report.failureDomain}`,
-        `Root cause: ${ticket.report.rootCause}`,
-        `Action taken: ${ticket.report.actionTaken}`,
-        `Service impact: ${ticket.report.serviceImpact}`,
-        `Current state: ${ticket.report.currentState}`,
-        ticket.report.notes ? `Notes: ${ticket.report.notes}` : ''
+        `Domaine de panne : ${ticket.report.failureDomain}`,
+        `Cause racine : ${ticket.report.rootCause}`,
+        `Action effectuée : ${ticket.report.actionTaken}`,
+        `Impact service : ${ticket.report.serviceImpact}`,
+        `État actuel : ${ticket.report.currentState}`,
+        ticket.report.notes ? `Notes : ${ticket.report.notes}` : ''
       ].filter(Boolean).join('\n')
-      : 'No engineer report submitted.',
+      : 'Aucun rapport ingénieur soumis.',
     '',
-    '## Root Cause',
-    ticket.report?.rootCause || diagnosis?.probableCauses.join('; ') || 'To be completed from engineer notes.',
+    '## Cause racine',
+    ticket.report?.rootCause || diagnosis?.probableCauses.join('; ') || 'À compléter depuis les notes ingénieur.',
     '',
-    '## Corrective Actions',
-    ticket.report?.actionTaken || diagnosis?.recommendedActions.map((action) => `- ${action}`).join('\n') || '- Followed standard operating procedure.',
+    '## Actions correctives',
+    ticket.report?.actionTaken || diagnosis?.recommendedActions.map((action) => `- ${action}`).join('\n') || '- Procédure opérationnelle standard suivie.',
     '',
-    '## Recovery Conditions',
-    diagnosis?.recoveryConditions.map((condition) => `- ${condition}`).join('\n') || '- Equipment restored to healthy state.',
+    '## Conditions de retour à la normale',
+    diagnosis?.recoveryConditions.map((condition) => `- ${condition}`).join('\n') || '- Équipement rétabli en état sain.',
     '',
-    '## Lessons Learned',
-    'This article was generated automatically when the ticket was closed and should be enriched if additional post-incident analysis is required.'
+    '## Enseignements',
+    'Cet article a été généré automatiquement à la clôture du ticket et doit être enrichi si une analyse post-incident complémentaire est requise.'
   ].join('\n');
 
   await prisma.knowledgeBase.create({
     data: {
-      title: `Incident Report - ${ticket.title}`,
-      category: 'Incident Reports',
+      title: `Rapport incident - ${ticket.title}`,
+      category: 'Rapports incidents',
       tags: [
         'incident-report',
         `ticket:${ticket.id}`,

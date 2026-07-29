@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Bell, Check, List } from 'lucide-react';
 import { API_BASE_URL } from '../../lib/api';
+import { formatDateTime } from '../../lib/frenchLabels';
 
 interface Notification {
   id: string;
@@ -99,7 +100,7 @@ export const NotificationTray = () => {
                 onClick={markAllAsRead}
                 className="text-xs text-primary hover:underline font-medium"
               >
-                Mark all as read
+                Tout marquer comme lu
               </button>
             )}
           </div>
@@ -107,7 +108,7 @@ export const NotificationTray = () => {
           <div className="max-h-96 overflow-y-auto">
             {notifications.length === 0 ? (
               <div className="p-4 text-center text-sm text-on-surface-variant">
-                No notifications right now.
+                Aucune notification pour le moment.
               </div>
             ) : (
               <div className="divide-y divide-border-subtle">
@@ -119,14 +120,14 @@ export const NotificationTray = () => {
                           {n.message}
                         </p>
                         <p className="text-xs text-on-surface-variant mt-1 font-mono">
-                          {new Date(n.createdAt).toLocaleString()}
+                          {formatDateTime(n.createdAt)}
                         </p>
                       </div>
                       {!n.read && (
                         <button 
                           onClick={() => markAsRead(n.id)}
                           className="text-primary hover:text-primary/80 p-1 rounded hover:bg-primary/10 transition-colors"
-                          title="Mark as read"
+                          title="Marquer comme lu"
                         >
                           <Check className="w-4 h-4" />
                         </button>
@@ -145,7 +146,7 @@ export const NotificationTray = () => {
               className="w-full inline-flex items-center justify-center gap-2 rounded-md border border-border-subtle bg-background px-3 py-2 text-sm text-on-surface hover:border-primary/50 hover:text-primary transition-colors"
             >
               <List className="w-4 h-4" />
-              Open all notifications
+              Ouvrir toutes les notifications
             </Link>
           </div>
         </div>

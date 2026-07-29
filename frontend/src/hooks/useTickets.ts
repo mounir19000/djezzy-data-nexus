@@ -10,7 +10,7 @@ const fetchTickets = async (siteId?: string) => {
   const res = await fetch(`${API_BASE_URL}/api/tickets${query ? `?${query}` : ''}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
-  if (!res.ok) throw new Error('Failed to fetch tickets');
+  if (!res.ok) throw new Error('Échec du chargement des tickets');
   return res.json();
 };
 
@@ -52,7 +52,7 @@ export const useUpdateTicketStatus = () => {
       });
       const body = await res.json();
       if (!res.ok) {
-        const message = typeof body?.error === 'string' ? body.error : body?.error?.message || 'Failed to update status';
+        const message = typeof body?.error === 'string' ? body.error : body?.error?.message || 'Échec de la mise à jour du statut';
         throw new Error(message);
       }
       return body;
@@ -93,7 +93,7 @@ export const useSubmitTicketReport = () => {
       });
       const body = await res.json();
       if (!res.ok) {
-        const message = typeof body?.error === 'string' ? body.error : body?.error?.message || 'Failed to submit ticket report';
+        const message = typeof body?.error === 'string' ? body.error : body?.error?.message || 'Échec de la soumission du rapport de ticket';
         throw new Error(message);
       }
       return body;
@@ -119,7 +119,7 @@ export const useDeleteTicket = () => {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        const message = typeof body?.error === 'string' ? body.error : body?.error?.message || 'Failed to delete ticket';
+        const message = typeof body?.error === 'string' ? body.error : body?.error?.message || 'Échec de la suppression du ticket';
         throw new Error(message);
       }
     },
@@ -155,7 +155,7 @@ export const useCreateTicket = () => {
       });
       const body = await res.json();
       if (!res.ok) {
-        const message = typeof body?.error === 'string' ? body.error : body?.error?.message || 'Failed to create ticket';
+        const message = typeof body?.error === 'string' ? body.error : body?.error?.message || 'Échec de la création du ticket';
         const error = new Error(message) as Error & { ticket?: any };
         error.ticket = body?.ticket;
         throw error;

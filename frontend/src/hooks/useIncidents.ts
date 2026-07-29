@@ -10,7 +10,7 @@ const fetchIncidents = async (siteId?: string) => {
   const res = await fetch(`${API_BASE_URL}/api/incidents${query ? `?${query}` : ''}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
-  if (!res.ok) throw new Error('Failed to fetch incidents');
+  if (!res.ok) throw new Error('Échec du chargement des incidents');
   return res.json();
 };
 
@@ -47,7 +47,7 @@ export const useAcknowledgeIncident = () => {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (!res.ok) throw new Error('Failed to acknowledge');
+      if (!res.ok) throw new Error('Échec de l’acquittement');
       return res.json();
     },
     onSuccess: () => {

@@ -22,7 +22,7 @@ const fetchMaintenanceTasks = async () => {
   const res = await fetch(`${API_BASE_URL}/api/maintenance`, {
     headers: { Authorization: `Bearer ${token}` }
   });
-  if (!res.ok) throw new Error('Failed to fetch maintenance tasks');
+  if (!res.ok) throw new Error('Échec du chargement des tâches de maintenance');
   return res.json();
 };
 
@@ -37,7 +37,7 @@ const fetchMaintenanceHistory = async ({ queryKey }: { queryKey: [string, string
   const res = await fetch(`${API_BASE_URL}/api/maintenance/history${query ? `?${query}` : ''}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
-  if (!res.ok) throw new Error(await readErrorMessage(res, 'Failed to fetch maintenance history'));
+  if (!res.ok) throw new Error(await readErrorMessage(res, 'Échec du chargement de l’historique maintenance'));
   return res.json();
 };
 
@@ -93,7 +93,7 @@ export const useCreateMaintenanceTask = () => {
         },
         body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error(await readErrorMessage(res, 'Failed to create maintenance task'));
+      if (!res.ok) throw new Error(await readErrorMessage(res, 'Échec de la création de la tâche de maintenance'));
       return res.json();
     },
     onSuccess: () => {
@@ -111,7 +111,7 @@ export const useDeleteMaintenanceTask = () => {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (!res.ok) throw new Error(await readErrorMessage(res, 'Failed to delete maintenance task'));
+      if (!res.ok) throw new Error(await readErrorMessage(res, 'Échec de la suppression de la tâche de maintenance'));
     },
     onSuccess: () => {
       invalidateMaintenanceQueries(queryClient);
@@ -128,7 +128,7 @@ export const useDeleteMaintenanceSchedule = () => {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (!res.ok) throw new Error(await readErrorMessage(res, 'Failed to delete maintenance schedule'));
+      if (!res.ok) throw new Error(await readErrorMessage(res, 'Échec de la suppression de la planification de maintenance'));
     },
     onSuccess: () => {
       invalidateMaintenanceQueries(queryClient);

@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Search, Book, X, Plus, FileText, Link as LinkIcon } from 'lucide-react';
 import { useCreateKnowledgeArticle, useKnowledgeBase } from '../../hooks/useKnowledge';
 import { useAppStore } from '../../store/useAppStore';
+import { displayOperationalText, displayStatus, displayText } from '../../lib/frenchLabels';
 
 const unique = (items: string[]) => [...new Set(items.filter(Boolean))].sort((a, b) => a.localeCompare(b));
 
@@ -106,7 +107,7 @@ const KnowledgeCenter = () => {
             onClick={() => setIsModalOpen(true)}
             className="bg-primary text-on-primary px-4 py-2 rounded-md font-sans font-medium hover:bg-primary-fixed-dim transition-colors flex items-center gap-2"
           >
-            <Plus className="w-4 h-4" /> Create Article
+            <Plus className="w-4 h-4" /> Créer un article
           </button>
         </div>
       )}
@@ -122,7 +123,7 @@ const KnowledgeCenter = () => {
                   onClick={() => setCategory(item)}
                   className={`w-full flex items-center justify-between text-sm p-2 rounded-md transition-colors ${category === item ? 'font-medium text-primary bg-bg-secondary' : 'text-on-surface hover:bg-bg-secondary'}`}
                 >
-                  <span className="truncate">{item}</span>
+                  <span className="truncate">{item === 'All Articles' ? 'Tous les articles' : displayText(item)}</span>
                   <span className="text-xs bg-background px-2 py-0.5 rounded text-on-surface-variant">
                     {item === 'All Articles' ? articles.length : articles.filter((article: any) => article.category === item).length}
                   </span>
@@ -137,7 +138,7 @@ const KnowledgeCenter = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
             <input
               type="text"
-              placeholder="Search problems, symptoms, rules, tickets..."
+                  placeholder="Rechercher problèmes, symptômes, règles, tickets..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full bg-background border border-border-subtle rounded-md pl-10 pr-4 py-3 text-sm font-sans focus:outline-none focus:border-primary transition-colors text-on-surface placeholder:text-on-surface-variant"
@@ -146,25 +147,25 @@ const KnowledgeCenter = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
             <select value={equipment} onChange={(event) => setEquipment(event.target.value)} className="bg-background border border-border-subtle rounded-md px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-primary">
-              <option value="">Equipment</option>
+              <option value="">Équipement</option>
               {equipmentOptions.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
             <select value={room} onChange={(event) => setRoom(event.target.value)} className="bg-background border border-border-subtle rounded-md px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-primary">
-              <option value="">Room</option>
-              {roomOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+              <option value="">Salle</option>
+              {roomOptions.map((item) => <option key={item} value={item}>{displayText(item)}</option>)}
             </select>
             <select value={failureType} onChange={(event) => setFailureType(event.target.value)} className="bg-background border border-border-subtle rounded-md px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-primary">
-              <option value="">Failure Type</option>
-              {failureTypeOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+              <option value="">Type de panne</option>
+              {failureTypeOptions.map((item) => <option key={item} value={item}>{displayText(item)}</option>)}
             </select>
             <input value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} type="date" className="bg-background border border-border-subtle rounded-md px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-primary" />
           </div>
 
           <div className="flex-1 overflow-y-auto space-y-3 pr-2">
             {isLoading ? (
-              <div className="text-on-surface-variant text-sm">Loading articles...</div>
+              <div className="text-on-surface-variant text-sm">Chargement des articles...</div>
             ) : filteredArticles.length === 0 ? (
-              <div className="text-on-surface-variant text-sm border border-dashed border-border-subtle rounded-lg p-5">No articles match the selected filters.</div>
+              <div className="text-on-surface-variant text-sm border border-dashed border-border-subtle rounded-lg p-5">Aucun article ne correspond aux filtres sélectionnés.</div>
             ) : filteredArticles.map((kb: any) => (
               <button
                 key={kb.id}
@@ -179,10 +180,10 @@ const KnowledgeCenter = () => {
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
                       {kb.ruleId && <span className="text-[11px] font-mono text-primary bg-primary/10 border border-primary/20 rounded px-1.5 py-0.5">{kb.ruleId}</span>}
-                      <span className="text-[11px] font-mono text-on-surface-variant bg-bg-secondary px-1.5 py-0.5 rounded">{kb.category}</span>
+                      <span className="text-[11px] font-mono text-on-surface-variant bg-bg-secondary px-1.5 py-0.5 rounded">{displayText(kb.category)}</span>
                     </div>
-                    <h4 className="font-sans font-medium text-on-surface group-hover:text-primary transition-colors line-clamp-2">{kb.title}</h4>
-                    <p className="text-xs text-on-surface-variant mt-2 line-clamp-2">{kb.problem || kb.content}</p>
+                    <h4 className="font-sans font-medium text-on-surface group-hover:text-primary transition-colors line-clamp-2">{displayOperationalText(kb.title)}</h4>
+                    <p className="text-xs text-on-surface-variant mt-2 line-clamp-2">{displayOperationalText(kb.problem || kb.content)}</p>
                   </div>
                 </div>
               </button>
@@ -192,45 +193,45 @@ const KnowledgeCenter = () => {
 
         <section className="xl:col-span-5 bg-bg-surface border border-border-subtle rounded-lg p-6 flex flex-col h-full min-h-0">
           {!selectedArticle ? (
-            <div className="flex-1 flex items-center justify-center text-on-surface-variant">Select an article.</div>
+            <div className="flex-1 flex items-center justify-center text-on-surface-variant">Sélectionnez un article.</div>
           ) : (
             <div className="flex-1 overflow-y-auto pr-2 space-y-6">
               <div className="border-b border-border-subtle pb-5">
                 <div className="flex flex-wrap gap-2 mb-3">
                   {selectedArticle.ruleId && <span className="text-xs font-mono text-primary bg-primary/10 border border-primary/30 rounded px-2 py-1">{selectedArticle.ruleId}</span>}
                   {selectedArticle.faultId && <span className="text-xs font-mono text-on-surface-variant bg-background border border-border-subtle rounded px-2 py-1">{selectedArticle.faultId}</span>}
-                  <span className="text-xs font-mono text-on-surface-variant bg-background border border-border-subtle rounded px-2 py-1">{selectedArticle.failureType || selectedArticle.category}</span>
+                  <span className="text-xs font-mono text-on-surface-variant bg-background border border-border-subtle rounded px-2 py-1">{displayText(selectedArticle.failureType || selectedArticle.category)}</span>
                 </div>
-                <h2 className="text-xl font-display font-bold text-on-surface leading-tight">{selectedArticle.title}</h2>
+                <h2 className="text-xl font-display font-bold text-on-surface leading-tight">{displayOperationalText(selectedArticle.title)}</h2>
               </div>
 
               <div>
-                <h3 className="text-sm font-mono text-on-surface-variant uppercase tracking-wider mb-2">Problem</h3>
-                <p className="text-sm text-on-surface leading-relaxed">{selectedArticle.problem || selectedArticle.content}</p>
+                <h3 className="text-sm font-mono text-on-surface-variant uppercase tracking-wider mb-2">Problème</h3>
+                <p className="text-sm text-on-surface leading-relaxed">{displayOperationalText(selectedArticle.problem || selectedArticle.content)}</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <ArticleList title="Symptoms" items={selectedArticle.symptoms} />
+                <ArticleList title="Symptômes" items={selectedArticle.symptoms} />
                 <ArticleList title="Cause" items={selectedArticle.causes} />
               </div>
 
-              <ArticleList title="Resolution" items={selectedArticle.resolution} numbered />
-              <ArticleList title="Related Equipment" items={selectedArticle.relatedEquipment} />
-              <ArticleList title="Engineer Notes" items={selectedArticle.engineerNotes} />
-              <ArticleList title="Similar Cases" items={selectedArticle.similarCases} />
+              <ArticleList title="Résolution" items={selectedArticle.resolution} numbered />
+              <ArticleList title="Équipements liés" items={selectedArticle.relatedEquipment} />
+              <ArticleList title="Notes ingénieur" items={selectedArticle.engineerNotes} />
+              <ArticleList title="Cas similaires" items={selectedArticle.similarCases} />
 
               <div>
-                <h3 className="text-sm font-mono text-on-surface-variant uppercase tracking-wider mb-3">Related Tickets</h3>
+                <h3 className="text-sm font-mono text-on-surface-variant uppercase tracking-wider mb-3">Tickets liés</h3>
                 {(selectedArticle.relatedTickets || []).length === 0 ? (
-                  <p className="text-sm text-on-surface-variant">No related tickets yet.</p>
+                  <p className="text-sm text-on-surface-variant">Aucun ticket lié pour le moment.</p>
                 ) : (
                   <div className="space-y-2">
                     {selectedArticle.relatedTickets.map((ticket: any) => (
                       <div key={ticket.id} className="bg-background border border-border-subtle rounded-md p-3">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-on-surface truncate">{ticket.title}</p>
-                            <p className="text-xs text-on-surface-variant mt-1 truncate">{ticket.site || 'Site'} / {ticket.room || 'Room'} / {ticket.equipment || 'Equipment'}</p>
+                            <p className="text-sm font-medium text-on-surface truncate">{displayOperationalText(ticket.title)}</p>
+                            <p className="text-xs text-on-surface-variant mt-1 truncate">{displayText(ticket.site || 'Site')} / {displayText(ticket.room || 'Room')} / {ticket.equipment || displayText('Equipment')} / {displayStatus(ticket.status)}</p>
                           </div>
                           <span className="text-xs font-mono text-on-surface-variant shrink-0">{ticket.id.substring(0, 8)}</span>
                         </div>
@@ -248,40 +249,40 @@ const KnowledgeCenter = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-bg-surface border border-border-subtle rounded-lg w-full max-w-3xl shadow-xl flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center p-4 border-b border-border-subtle">
-              <h3 className="text-lg font-sans font-medium text-on-surface">Create Knowledge Article</h3>
+              <h3 className="text-lg font-sans font-medium text-on-surface">Créer un article de connaissance</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-on-surface-variant hover:text-on-surface">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleSubmit} className="p-4 space-y-4 flex-1 overflow-y-auto">
               <div>
-                <label className="block text-sm font-medium text-on-surface mb-1">Title</label>
-                <input required name="title" type="text" className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface focus:outline-none focus:border-primary" placeholder="e.g. UPS Failure Recovery Procedure" />
+                <label className="block text-sm font-medium text-on-surface mb-1">Titre</label>
+                <input required name="title" type="text" className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface focus:outline-none focus:border-primary" placeholder="ex. Procédure de reprise après défaut UPS" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-on-surface mb-1">Category</label>
+                  <label className="block text-sm font-medium text-on-surface mb-1">Categorie</label>
                   <select required name="category" className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface focus:outline-none focus:border-primary">
-                    <option value="Power Systems">Power Systems</option>
-                    <option value="Cooling & HVAC">Cooling & HVAC</option>
-                    <option value="Network & Telemetry">Network & Telemetry</option>
-                    <option value="General SOP">General SOP</option>
+                    <option value="Power Systems">Systèmes énergie</option>
+                    <option value="Cooling & HVAC">Climatisation et HVAC</option>
+                    <option value="Network & Telemetry">Réseau et télémétrie</option>
+                    <option value="General SOP">Procédure generale</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-on-surface mb-1">Tags</label>
-                  <input name="tags" type="text" className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface focus:outline-none focus:border-primary" placeholder="ups, emergency, power" />
+                  <input name="tags" type="text" className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface focus:outline-none focus:border-primary" placeholder="ups, urgence, énergie" />
                 </div>
               </div>
               <div className="flex-1 flex flex-col min-h-[300px]">
-                <label className="block text-sm font-medium text-on-surface mb-1">Content</label>
-                <textarea required name="content" className="flex-1 w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface font-mono text-sm focus:outline-none focus:border-primary" placeholder="# Context&#10;Describe the context...&#10;&#10;## Resolution&#10;Steps to resolve..."></textarea>
+                <label className="block text-sm font-medium text-on-surface mb-1">Contenu</label>
+                <textarea required name="content" className="flex-1 w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-on-surface font-mono text-sm focus:outline-none focus:border-primary" placeholder="# Contexte&#10;Décrivez le contexte...&#10;&#10;## Résolution&#10;Étapes de résolution..."></textarea>
               </div>
               {formError && <div className="text-sm text-status-warning">{formError}</div>}
               <div className="flex justify-end gap-3 pt-4 border-t border-border-subtle mt-4">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-md font-medium text-on-surface hover:bg-bg-secondary transition-colors">Cancel</button>
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-md font-medium text-on-surface hover:bg-bg-secondary transition-colors">Annuler</button>
                 <button disabled={isCreating} type="submit" className="bg-primary text-on-primary px-4 py-2 rounded-md font-medium hover:bg-primary-fixed-dim transition-colors disabled:opacity-50">
-                  {isCreating ? 'Saving...' : 'Save Article'}
+                  {isCreating ? 'Enregistrement...' : 'Enregistrer l’article'}
                 </button>
               </div>
             </form>
@@ -303,10 +304,10 @@ const ArticleList = ({ title, items, numbered = false }: { title: string; items?
         {title}
       </h3>
       {visibleItems.length === 0 ? (
-        <p className="text-sm text-on-surface-variant">No entries yet.</p>
+        <p className="text-sm text-on-surface-variant">Aucune entrée pour le moment.</p>
       ) : (
         <ListTag className={`${numbered ? 'list-decimal' : 'list-disc'} list-inside text-sm text-on-surface space-y-1`}>
-          {visibleItems.map((item) => <li key={item}>{item}</li>)}
+          {visibleItems.map((item) => <li key={item}>{displayOperationalText(displayText(item))}</li>)}
         </ListTag>
       )}
     </div>

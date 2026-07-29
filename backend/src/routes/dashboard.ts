@@ -1,13 +1,61 @@
 import { Router, Response } from 'express';
 import { prisma } from '../config/prisma';
 import { requireAuth } from '../middleware/auth';
+import { calculateSiteHealth } from '../services/siteHealth';
 
 const router = Router();
+
+const severityLabels: Record<string, string> = {
+  critical: 'CRITIQUE',
+  warning: 'AVERTISSEMENT',
+  healthy: 'SAIN'
+};
+
+const ticketStatusLabels: Record<string, string> = {
+  pending: 'En attente',
+  assigned: 'Assigné',
+  inProgress: 'En cours',
+  resolved: 'Résolu',
+  closed: 'Clôturé'
+};
 
 router.get('/metrics', requireAuth, async (req, res: Response) => {
   try {
     const totalSites = await prisma.site.count();
-    const sites = await prisma.site.findMany();
+    const rawSites = await prisma.site.findMany({
+      include: {
+        rooms: {
+          include: {
+            equipments: {
+              include: {
+                alarms: { where: { active: true } }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    const equipmentIds = rawSites.flatMap(s => s.rooms.flatMap(r => r.equipments.map(e => e.id)));
+    const latestTelemetry = equipmentIds.length > 0 ? await prisma.telemetry.findMany({
+      where: { equipmentId: { in: equipmentIds } },
+      orderBy: { timestamp: 'desc' },
+      take: equipmentIds.length * 15
+    }) : [];
+
+    const latestMetricMap = latestTelemetry.reduce((acc: Record<string, Record<string, number>>, item: any) => {
+      acc[item.equipmentId] ||= {};
+      if (acc[item.equipmentId][item.metricType] === undefined) {
+        acc[item.equipmentId][item.metricType] = item.value;
+      }
+      return acc;
+    }, {});
+
+    const sites = rawSites.map(site => ({
+      ...site,
+      overallHealth: calculateSiteHealth(site, latestMetricMap).score
+    }));
+
     const healthySites = sites.filter((s: any) => s.overallHealth >= 90).length;
     const warningSites = sites.filter((s: any) => s.overallHealth >= 70 && s.overallHealth < 90).length;
     const criticalSites = sites.filter((s: any) => s.overallHealth < 70).length;
@@ -59,7 +107,7 @@ router.get('/metrics', requireAuth, async (req, res: Response) => {
         ...recentAlarms.map((a: any) => ({
           id: a.id,
           type: 'alarm',
-          title: `Site ${a.equipment?.room?.site?.name || 'Unknown'} - ${a.severity.toUpperCase()}`,
+          title: `Site ${a.equipment?.room?.site?.name || 'Inconnu'} - ${severityLabels[a.severity] || a.severity.toUpperCase()}`,
           description: a.description,
           severity: a.severity,
           time: a.createdAt
@@ -67,8 +115,8 @@ router.get('/metrics', requireAuth, async (req, res: Response) => {
         ...recentTickets.map((t: any) => ({
           id: t.id,
           type: 'ticket',
-          title: `Ticket ${t.id.substring(0,8)} Updated`,
-          description: `Ticket status is now ${t.status}.`,
+          title: `Ticket ${t.id.substring(0,8)} mis à jour`,
+          description: `Le statut du ticket est maintenant ${ticketStatusLabels[t.status] || t.status}.`,
           severity: t.status === 'resolved' || t.status === 'closed' ? 'healthy' : 'secondary',
           time: t.updatedAt
         }))
@@ -76,7 +124,7 @@ router.get('/metrics', requireAuth, async (req, res: Response) => {
     });
 
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch dashboard metrics' });
+    res.status(500).json({ error: 'Échec du chargement des indicateurs du tableau de bord' });
   }
 });
 

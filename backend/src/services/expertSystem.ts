@@ -164,7 +164,7 @@ const getContacts = (category: string, severity: string) => {
 };
 
 const stripAlarmPrefix = (description: string) => normalizeWhitespace(description)
-  .replace(/^(UPS Log|Clim Log|SCADA):\s*/i, '')
+  .replace(/^(UPS Log|Clim Log|Journal UPS|Journal clim|SCADA):\s*/i, '')
   .replace(/^\[(A|D|Q)\]\s*/i, '')
   .replace(/^(Warning|Critical|Information):\s*/i, '')
   .replace(/\s+has been restored$/i, '')
@@ -591,19 +591,19 @@ const bestDiagnosis = (diagnoses: ExpertDiagnosis[]) => {
 
 const fallbackDiagnosis = (alarm: DiagnosisInput, normalized?: NormalizedScadaAlarm | null): ExpertDiagnosis => {
   const description = canonical(alarm.description || '');
-  const equipmentName = alarm.equipment?.name || normalized?.equipmentName || 'Monitored equipment';
-  const roomName = alarm.equipment?.room?.name || normalized?.room || 'Unknown room';
+  const equipmentName = alarm.equipment?.name || normalized?.equipmentName || 'Équipement surveillé';
+  const roomName = alarm.equipment?.room?.name || normalized?.room || 'Salle inconnue';
   const priority = severityToPriority(alarm.severity);
 
   if (normalized?.type?.startsWith('temp_high') || includesAny(description, ['temp', 'temperature', 'clim', 'return air', 'haute'])) {
     return {
-      problem: `${roomName} thermal condition outside target range`,
+      problem: `Condition thermique de ${roomName} hors plage cible`,
       category: 'Climatisation',
-      probableCauses: ['Cooling unit under-performing or stopped', 'Blocked filter or reduced air circulation', 'Room load increased beyond cooling capacity'],
-      operationalImpacts: ['Thermal stress on telecom and power equipment', 'Higher probability of cascading alarms if temperature continues rising'],
-      technicalJustification: 'The alarm is recognized as an environmental event, but no stronger multi-alarm SCADA rule matched the current site state.',
-      recommendedActions: ['Verify the active cooling unit state and alarm panel.', 'Inspect air filters and airflow around the affected racks.', 'Escalate to HVAC maintenance if the room does not recover within 15 minutes.'],
-      recoveryConditions: ['Room temperature returns below the configured high threshold.', 'No active cooling or high-temperature alarms remain for the room.'],
+      probableCauses: ['Unité de climatisation sous-performante ou arrêtée', 'Filtre bloqué ou circulation d’air réduite', 'Charge thermique de la salle au-delà de la capacité de refroidissement'],
+      operationalImpacts: ['Stress thermique sur les équipements télécom et énergie', 'Probabilité accrue d’alarmes en cascade si la température continue à monter'],
+      technicalJustification: 'L’alarme est reconnue comme un événement environnemental, mais aucune règle SCADA multi-alarmes plus forte ne correspond à l’état actuel du site.',
+      recommendedActions: ['Vérifier l’état de l’unité de climatisation active et son panneau d’alarmes.', 'Inspecter les filtres à air et le flux d’air autour des baies touchées.', 'Escalader vers la maintenance HVAC si la salle ne revient pas à la normale sous 15 minutes.'],
+      recoveryConditions: ['La température de la salle repasse sous le seuil haut configuré.', 'Aucune alarme active de climatisation ou de température haute ne reste présente pour la salle.'],
       contactPerson: PRIMARY_CONTACT['Climatisation'],
       confidence: 74,
       priority,
@@ -614,13 +614,13 @@ const fallbackDiagnosis = (alarm: DiagnosisInput, normalized?: NormalizedScadaAl
 
   if (normalized?.type === 'power_absence' || includesAny(description, ['absence de tension', 'grid', 'voltage sag', 'input supply', 'reseau'])) {
     return {
-      problem: 'Site power input instability detected',
+      problem: 'Instabilité de l’entrée énergie du site détectée',
       category: 'Énergie',
-      probableCauses: ['Utility grid outage or voltage sag', 'Transformer input instability', 'ATS transition or protection event'],
-      operationalImpacts: ['Site may be operating on backup power or exposed to input fluctuations', 'UPS batteries can discharge if grid power remains unavailable'],
-      technicalJustification: 'The alarm is recognized as a power event, but the current alarm set does not satisfy a stronger expert-system correlation.',
-      recommendedActions: ['Confirm three-phase input voltage on the power panel.', 'Verify ATS source selection and generator readiness.', 'Monitor UPS battery capacity until stable grid input is restored.'],
-      recoveryConditions: ['L1, L2, and L3 input voltages return to nominal range.', 'ATS is stable on grid or generator source with UPS battery capacity protected.'],
+      probableCauses: ['Coupure du réseau électrique ou creux de tension', 'Instabilité d’entrée transformateur', 'Transition ATS ou événement de protection'],
+      operationalImpacts: ['Le site peut fonctionner sur énergie de secours ou être exposé aux fluctuations d’entrée', 'Les batteries UPS peuvent se décharger si le réseau reste indisponible'],
+      technicalJustification: 'L’alarme est reconnue comme un événement énergie, mais l’ensemble actuel d’alarmes ne satisfait pas une corrélation plus forte du système expert.',
+      recommendedActions: ['Confirmer la tension d’entrée triphasée sur le tableau énergie.', 'Vérifier la sélection de source ATS et la disponibilité du groupe électrogène.', 'Surveiller la capacité batterie UPS jusqu’au rétablissement stable du réseau.'],
+      recoveryConditions: ['Les tensions d’entrée L1, L2 et L3 reviennent dans la plage nominale.', 'L’ATS est stable sur la source réseau ou groupe avec la capacité batterie UPS protégée.'],
       contactPerson: PRIMARY_CONTACT['Énergie'],
       confidence: 76,
       priority,
@@ -631,13 +631,13 @@ const fallbackDiagnosis = (alarm: DiagnosisInput, normalized?: NormalizedScadaAl
 
   if (normalized?.type?.startsWith('ups_') || normalized?.type?.includes('rectifier') || includesAny(description, ['bypass', 'sync', 'synchronization', 'ups failure', 'general alarm', 'rectifier'])) {
     return {
-      problem: `${equipmentName} protection path degraded`,
+      problem: `Chemin de protection dégradé sur ${equipmentName}`,
       category: 'UPS',
-      probableCauses: ['Inverter phase synchronization fault', 'Static bypass switch or rectifier input fault', 'UPS control board or protection logic event'],
-      operationalImpacts: ['Critical loads may lose clean protected power', 'Switch and transmission rooms become vulnerable to grid fluctuations'],
-      technicalJustification: 'The alarm is recognized as a UPS event, but no stronger correlated SCADA rule matched the current site state.',
-      recommendedActions: ['Verify UPS front-panel alarm codes and current operating mode.', 'Confirm output phase sequence and load balance across L1, L2, and L3.', 'Keep redundant protection available and dispatch a UPS specialist if the alarm remains active.'],
-      recoveryConditions: ['UPS returns to inverter-protected operation.', 'Output load is balanced and no UPS critical alarm remains active.'],
+      probableCauses: ['Défaut de synchronisation de phase onduleur', 'Défaut du bypass statique ou de l’entrée redresseur', 'Événement de carte de contrôle UPS ou de logique de protection'],
+      operationalImpacts: ['Les charges critiques peuvent perdre une alimentation propre et protégée', 'Les salles switch et transmission deviennent vulnérables aux fluctuations réseau'],
+      technicalJustification: 'L’alarme est reconnue comme un événement UPS, mais aucune règle SCADA corrélée plus forte ne correspond à l’état actuel du site.',
+      recommendedActions: ['Vérifier les codes d’alarme en façade UPS et le mode de fonctionnement actuel.', 'Confirmer la séquence des phases de sortie et l’équilibre de charge sur L1, L2 et L3.', 'Conserver la protection redondante disponible et déclencher un spécialiste UPS si l’alarme reste active.'],
+      recoveryConditions: ['L’UPS revient en fonctionnement protégé par onduleur.', 'La charge de sortie est équilibrée et aucune alarme critique UPS ne reste active.'],
       contactPerson: PRIMARY_CONTACT.UPS,
       confidence: 76,
       priority,
@@ -647,14 +647,14 @@ const fallbackDiagnosis = (alarm: DiagnosisInput, normalized?: NormalizedScadaAl
   }
 
   return {
-    problem: `${equipmentName} alarm requires operator review`,
-    category: 'General',
-    probableCauses: ['Equipment state changed outside expected operating envelope', 'SCADA event requires validation against field status'],
-    operationalImpacts: ['Potential degradation of site operating conditions', 'Incident may require engineer intervention if it persists'],
-    technicalJustification: 'No specialized rule matched the alarm text, so the platform falls back to the general alarm review workflow.',
-    recommendedActions: ['Validate the alarm in SCADA and inspect the affected room.', 'Create an actionable ticket if the condition persists or affects service risk.', 'Attach field notes after intervention so the knowledge base can be updated.'],
-    recoveryConditions: ['Alarm is cleared or acknowledged after field validation.', 'Related equipment status returns to healthy.'],
-    contactPerson: 'Site engineer',
+    problem: `L’alarme ${equipmentName} nécessite une revue opérateur`,
+    category: 'Général',
+    probableCauses: ['L’état de l’équipement est sorti de son enveloppe de fonctionnement attendue', 'L’événement SCADA nécessite une validation par rapport à l’état terrain'],
+    operationalImpacts: ['Dégradation potentielle des conditions opérationnelles du site', 'L’incident peut nécessiter une intervention ingénieur s’il persiste'],
+    technicalJustification: 'Aucune règle spécialisée ne correspond au texte de l’alarme ; la plateforme applique donc le flux général de revue des alarmes.',
+    recommendedActions: ['Valider l’alarme dans SCADA et inspecter la salle concernée.', 'Créer un ticket actionnable si la condition persiste ou affecte le risque service.', 'Ajouter les notes terrain après intervention pour mettre à jour la base de connaissances.'],
+    recoveryConditions: ['L’alarme est levée ou acquittée après validation terrain.', 'L’état de l’équipement concerné revient à sain.'],
+    contactPerson: 'Ingénieur du site',
     confidence: 60,
     priority,
     alarmTypes: normalized ? [normalized.type] : undefined,
@@ -709,11 +709,11 @@ export const attachExpertDiagnosesToAlarms = (activeAlarms: DiagnosisInput[], co
 
 const roomLabelForCode = (room: string) => {
   const labels: Record<string, string> = {
-    salle_ups: 'UPS Room',
-    salle_batterie: 'Battery Room',
-    salle_reseau: 'Switch / Network Room',
-    salle_energie: 'Energy Room',
-    datacenter: 'Data Center'
+    salle_ups: 'Salle UPS',
+    salle_batterie: 'Salle batteries',
+    salle_reseau: 'Salle switch / réseau',
+    salle_energie: 'Salle énergie',
+    datacenter: 'Data center'
   };
   return labels[room] || room;
 };
@@ -721,11 +721,11 @@ const roomLabelForCode = (room: string) => {
 const roomsForAlarmTypes = (alarmTypes: string[]) => {
   const rooms = new Set<string>();
   alarmTypes.forEach((type) => {
-    if (type.includes('ups_room')) rooms.add('UPS Room');
-    if (type.includes('battery_room')) rooms.add('Battery Room');
-    if (type.includes('switch_room')) rooms.add('Switch / Network Room');
-    if (type.includes('energy_room')) rooms.add('Energy Room');
-    if (type.includes('datacenter')) rooms.add('Data Center');
+    if (type.includes('ups_room')) rooms.add('Salle UPS');
+    if (type.includes('battery_room')) rooms.add('Salle batteries');
+    if (type.includes('switch_room')) rooms.add('Salle switch / réseau');
+    if (type.includes('energy_room')) rooms.add('Salle énergie');
+    if (type.includes('datacenter')) rooms.add('Data center');
   });
   return [...rooms];
 };
@@ -733,26 +733,26 @@ const roomsForAlarmTypes = (alarmTypes: string[]) => {
 const articleContent = (ruleId: string, kb: ScadaExpertRuleKnowledge) => [
   `# ${kb.rule_name}`,
   '',
-  '## Problem',
+  '## Problème',
   kb.problem,
   '',
-  '## Symptoms',
+  '## Symptômes',
   ...kb.alarms.map((alarmType) => `- ${alarmLabel(alarmType)}`),
   '',
   '## Cause',
   ...kb.causes.map((cause) => `- ${cause}`),
   '',
-  '## Resolution',
+  '## Résolution',
   ...kb.actions.map((action) => `- ${action}`),
   '',
-  '## Related Equipment',
+  '## Équipements liés',
   ...kb.equipment.map((equipment) => `- ${equipment}`),
   '',
-  '## Return To Normal',
+  '## Retour à la normale',
   ...kb.return_to_normal.map((condition) => `- ${condition}`),
   '',
-  '## Engineer Notes',
-  `Generated from SCADA expert rule ${ruleId}. Add field notes from closed tickets to enrich this article.`
+  '## Notes ingénieur',
+  `Généré depuis la règle experte SCADA ${ruleId}. Ajoutez les notes terrain des tickets clôturés pour enrichir cet article.`
 ].join('\n');
 
 export const buildExpertKnowledgeArticles = (tickets: any[] = []): ExpertKnowledgeArticle[] => {
@@ -809,7 +809,7 @@ export const buildExpertKnowledgeArticles = (tickets: any[] = []): ExpertKnowled
       causes: [...kb.causes],
       resolution: [...kb.actions, ...kb.return_to_normal],
       relatedEquipment: [...kb.equipment],
-      engineerNotes: [`Generated from SCADA expert rule ${ruleId}.`],
+      engineerNotes: [`Généré depuis la règle experte SCADA ${ruleId}.`],
       similarCases,
       relatedTickets,
       rooms: roomsForAlarmTypes(kb.alarms).map(roomLabelForCode),

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
+import { displayRole } from '../../lib/frenchLabels';
 
 export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = useAppStore((state: any) => state.isAuthenticated);
@@ -26,8 +27,8 @@ export const RoleBoundary = ({ allowedRoles, children }: { allowedRoles: string[
     return (
       <div className="h-full flex items-center justify-center">
         <div className="bg-status-critical/10 border border-status-critical/20 rounded-lg p-8 max-w-md text-center">
-          <h2 className="text-xl font-bold text-status-critical mb-2">Access Denied</h2>
-          <p className="text-sm text-on-surface-variant">Your current role ({user.role}) does not have permission to view this section.</p>
+          <h2 className="text-xl font-bold text-status-critical mb-2">Accès refusé</h2>
+          <p className="text-sm text-on-surface-variant">Votre rôle actuel ({displayRole(user.role)}) n’a pas l’autorisation de consulter cette section.</p>
         </div>
       </div>
     );

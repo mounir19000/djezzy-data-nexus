@@ -5,6 +5,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import frLocale from '@fullcalendar/core/locales/fr';
 import { useQuery } from '@tanstack/react-query';
 import { useMaintenanceTasks } from '../../hooks/useMaintenance';
 import { useAppStore } from '../../store/useAppStore';
@@ -12,6 +13,7 @@ import MaintenanceScheduler from '../../components/maintenance/MaintenanceSchedu
 import MaintenanceTaskModal from '../../components/maintenance/MaintenanceTaskModal';
 import MaintenanceScheduleModal from '../../components/maintenance/MaintenanceScheduleModal';
 import { API_BASE_URL } from '../../lib/api';
+import { displayText, formatDate } from '../../lib/frenchLabels';
 
 const fetchSchedules = async () => {
   const token = localStorage.getItem('djezzy_token');
@@ -88,14 +90,14 @@ const MaintenanceCalendar = () => {
           to="/mantainancehistory"
           className="bg-bg-surface border border-border-subtle text-on-surface px-5 py-2.5 rounded-lg font-sans font-medium hover:border-primary hover:text-primary transition-colors flex items-center gap-2"
         >
-          <History className="w-4 h-4" /> History
+          <History className="w-4 h-4" /> Historique
         </Link>
         {canSchedule && (
           <button 
             onClick={() => setIsModalOpen(true)}
             className="bg-gradient-to-r from-primary to-primary-fixed-dim text-on-primary px-5 py-2.5 rounded-lg font-sans font-medium hover:shadow-lg hover:shadow-primary/20 hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2"
           >
-            <CalendarIcon className="w-4 h-4" /> Schedule Maintenance
+            <CalendarIcon className="w-4 h-4" /> Planifier une maintenance
           </button>
         )}
       </div>
@@ -104,11 +106,12 @@ const MaintenanceCalendar = () => {
         {/* Calendar View */}
         <div className="col-span-1 lg:col-span-2 bg-bg-surface border border-border-subtle rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.05)] p-6 flex flex-col min-h-[500px] lg:h-[700px] overflow-hidden">
           <h3 className="text-lg font-sans font-semibold text-on-surface mb-6 flex items-center gap-2">
-            <CalendarIcon className="w-5 h-5 text-primary" /> Maintenance Schedule
+            <CalendarIcon className="w-5 h-5 text-primary" /> Calendrier de maintenance
           </h3>
           <div className="flex-1 min-h-[400px]">
             <FullCalendar
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+              locale={frLocale}
               initialView="dayGridMonth"
               headerToolbar={{
                 left: 'prev,next today',
@@ -131,13 +134,13 @@ const MaintenanceCalendar = () => {
 
         {/* Upcoming Tasks */}
         <div className="col-span-1 bg-bg-surface border border-border-subtle rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.05)] p-6 flex flex-col h-full overflow-hidden">
-          <h3 className="text-lg font-sans font-semibold text-on-surface mb-6">Upcoming Tasks</h3>
+          <h3 className="text-lg font-sans font-semibold text-on-surface mb-6">Tâches à venir</h3>
           <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
             
             {isTasksLoading ? (
-              <div className="text-on-surface-variant text-sm">Loading tasks...</div>
+              <div className="text-on-surface-variant text-sm">Chargement des tâches...</div>
             ) : upcomingTasks.length === 0 ? (
-              <div className="text-on-surface-variant text-sm italic">No upcoming maintenance scheduled.</div>
+              <div className="text-on-surface-variant text-sm italic">Aucune maintenance à venir planifiee.</div>
             ) : (
               upcomingTasks.map((task: any) => {
                 const isOverdue = new Date(task.scheduledDate) < new Date() && task.status !== 'completed';
@@ -157,19 +160,19 @@ const MaintenanceCalendar = () => {
                         isSoon ? 'text-status-warning bg-status-warning/10 border border-status-warning/20' : 
                         'text-primary bg-primary/10 border border-primary/20'
                       }`}>
-                        {isOverdue ? 'Overdue' : new Date(task.scheduledDate).toLocaleDateString()}
+                        {isOverdue ? 'En retard' : formatDate(task.scheduledDate)}
                       </span>
                     </div>
                     <div className="text-xs text-on-surface-variant mb-3 flex items-center gap-1.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-on-surface-variant/40" />
-                      {task.equipment?.name || 'General'}
+                      {task.equipment?.name || displayText('General')}
                     </div>
                     <div className="flex justify-between items-center text-xs">
                       <span className="flex items-center gap-1.5 text-on-surface-variant bg-bg-secondary px-2 py-1 rounded">
                         {isOverdue ? <AlertTriangle className="w-3.5 h-3.5 text-status-critical" /> : <Clock className="w-3.5 h-3.5 text-primary" />} 
-                        {new Date(task.scheduledDate).toLocaleDateString()}
+                        {formatDate(task.scheduledDate)}
                       </span>
-                      <span className="text-on-surface-variant">Assigned: <span className="font-medium text-on-surface">{task.assignee ? task.assignee.firstName : 'Unassigned'}</span></span>
+                      <span className="text-on-surface-variant">Assigné : <span className="font-medium text-on-surface">{task.assignee ? task.assignee.firstName : 'Non assigné'}</span></span>
                     </div>
                   </button>
                 );
@@ -186,7 +189,7 @@ const MaintenanceCalendar = () => {
           <div className="bg-bg-surface border border-border-subtle rounded-xl w-full max-w-5xl shadow-2xl flex flex-col transform scale-100 transition-transform">
             <div className="flex justify-between items-center p-5 border-b border-border-subtle bg-bg-secondary/30">
               <h3 className="text-lg font-sans font-semibold text-on-surface flex items-center gap-2">
-                <CalendarIcon className="w-5 h-5 text-primary" /> Schedule Maintenance
+                <CalendarIcon className="w-5 h-5 text-primary" /> Planifier une maintenance
               </h3>
               <button onClick={() => setIsModalOpen(false)} className="text-on-surface-variant hover:text-on-surface transition-colors p-1 rounded-full hover:bg-bg-surface">
                 <X className="w-5 h-5" />

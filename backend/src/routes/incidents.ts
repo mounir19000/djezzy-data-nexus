@@ -70,7 +70,7 @@ router.get('/', requireAuth, async (req: any, res: Response) => {
     res.json(attachExpertDiagnosesToAlarms(alarms as any[], contextAlarms as any[]));
   } catch (error) {
     console.error('Fetch incidents error:', error);
-    res.status(500).json({ error: 'Failed to fetch alarms' });
+    res.status(500).json({ error: 'Échec du chargement des alarmes' });
   }
 });
 
@@ -87,13 +87,13 @@ router.post('/:id/acknowledge', requireAuth, async (req: any, res: Response) => 
     await prisma.notification.create({
       data: {
         userId: authReq.user!.id,
-        message: `Alarm on equipment ${alarm.equipmentId} acknowledged.`,
+        message: `Alarme sur l’équipement ${alarm.equipmentId} acquittée.`,
       }
     });
 
     res.json(alarm);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to acknowledge alarm' });
+    res.status(500).json({ error: 'Échec de l’acquittement de l’alarme' });
   }
 });
 

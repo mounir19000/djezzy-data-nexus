@@ -16,7 +16,7 @@ router.get('/', requireAuth, async (req: any, res: any) => {
     });
     res.json(notifications);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch notifications' });
+    res.status(500).json({ error: 'Échec du chargement des notifications' });
   }
 });
 
@@ -32,11 +32,11 @@ router.put('/:id/read', requireAuth, async (req: any, res: any) => {
       data: { read: true }
     });
     if (notification.count === 0) {
-      return res.status(404).json({ error: 'Notification not found' });
+      return res.status(404).json({ error: 'Notification introuvable' });
     }
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update notification' });
+    res.status(500).json({ error: 'Échec de la mise à jour de la notification' });
   }
 });
 
@@ -53,7 +53,7 @@ router.put('/read-all', requireAuth, async (req: any, res: any) => {
     });
     res.json({ success: true, updated: result.count });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update notifications' });
+    res.status(500).json({ error: 'Échec de la mise à jour des notifications' });
   }
 });
 

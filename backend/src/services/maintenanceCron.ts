@@ -28,7 +28,7 @@ export const startMaintenanceCron = () => {
         // Create the maintenance task
         const task = await prisma.maintenanceTask.create({
           data: {
-            title: `[Recurring] ${schedule.title}`,
+            title: `[Recurrent] ${schedule.title}`,
             equipmentId: schedule.equipmentId,
             status: 'pending',
             assignedTo: schedule.assignedTo,
@@ -41,7 +41,7 @@ export const startMaintenanceCron = () => {
           await prisma.notification.create({
             data: {
               userId: schedule.assignedTo,
-              message: `Recurring Maintenance due tomorrow: ${schedule.title} on ${schedule.equipment.name}`,
+              message: `Maintenance récurrente prévue demain : ${schedule.title} sur ${schedule.equipment.name}`,
             }
           });
         }

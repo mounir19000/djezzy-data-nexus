@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Bell, Check, CheckCheck, Inbox } from 'lucide-react';
 import { API_BASE_URL } from '../../lib/api';
+import { formatDateTime } from '../../lib/frenchLabels';
 
 interface Notification {
   id: string;
@@ -72,7 +73,7 @@ const NotificationsPage = () => {
           className="inline-flex items-center gap-2 rounded-md border border-border-subtle bg-bg-surface px-4 py-2 text-sm text-on-surface hover:border-primary/50 hover:text-primary disabled:opacity-50 disabled:hover:border-border-subtle disabled:hover:text-on-surface"
         >
           <CheckCheck className="w-4 h-4" />
-          Mark all as read
+          Tout marquer comme lu
         </button>
       </div>
 
@@ -83,18 +84,18 @@ const NotificationsPage = () => {
               <Bell className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-sans font-medium text-on-surface">All Notifications</h3>
-              <p className="text-xs text-on-surface-variant">{unreadCount} unread of {notifications.length}</p>
+              <h3 className="text-base font-sans font-medium text-on-surface">Toutes les notifications</h3>
+              <p className="text-xs text-on-surface-variant">{unreadCount} non lues sur {notifications.length}</p>
             </div>
           </div>
         </div>
 
         {isLoading ? (
-          <div className="p-6 text-sm text-on-surface-variant">Loading notifications...</div>
+          <div className="p-6 text-sm text-on-surface-variant">Chargement des notifications...</div>
         ) : notifications.length === 0 ? (
           <div className="p-10 text-center">
             <Inbox className="w-10 h-10 text-on-surface-variant mx-auto" />
-            <p className="text-sm text-on-surface-variant mt-3">No notifications right now.</p>
+            <p className="text-sm text-on-surface-variant mt-3">Aucune notification pour le moment.</p>
           </div>
         ) : (
           <div className="divide-y divide-border-subtle">
@@ -105,7 +106,7 @@ const NotificationsPage = () => {
                     {notification.message}
                   </p>
                   <p className="text-xs text-on-surface-variant mt-2 font-mono">
-                    {new Date(notification.createdAt).toLocaleString()}
+                    {formatDateTime(notification.createdAt)}
                   </p>
                 </div>
 
@@ -116,7 +117,7 @@ const NotificationsPage = () => {
                     className="shrink-0 inline-flex items-center gap-2 rounded-md border border-primary/25 bg-primary/10 px-3 py-2 text-xs text-primary hover:bg-primary/15"
                   >
                     <Check className="w-4 h-4" />
-                    Read
+                    Lu
                   </button>
                 )}
               </div>

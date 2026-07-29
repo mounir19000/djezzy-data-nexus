@@ -5,6 +5,7 @@ import RoomDetailsPanel from '../../components/twin/RoomDetailsPanel';
 import Badge from '../../components/ui/Badge';
 import { useTelemetryStore } from '../../store/useTelemetryStore';
 import { useSite } from '../../hooks/useSites';
+import { displayText } from '../../lib/frenchLabels';
 
 
 
@@ -34,7 +35,7 @@ const DigitalTwinDashboard = () => {
   const equipmentData = useTelemetryStore(state => state.equipmentData);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
 
-  const siteName = currentSite?.name || 'MSC10 Blida';
+  const siteName = displayText(currentSite?.name || 'MSC10 Blida');
   const roomSummaries = useMemo(() => {
     const summaries = (currentSite?.rooms || [])
       .filter((room: any) => 
@@ -80,8 +81,8 @@ const DigitalTwinDashboard = () => {
     return (
       <div className="h-full min-h-[560px] bg-bg-surface border border-border-subtle rounded-lg p-6 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-xl font-display font-bold text-on-surface">Loading Digital Twin</h2>
-          <p className="text-on-surface-variant mt-2">Preparing site room and equipment state...</p>
+          <h2 className="text-xl font-display font-bold text-on-surface">Chargement du jumeau numerique</h2>
+          <p className="text-on-surface-variant mt-2">Préparation des salles du site et de l’état des équipements...</p>
         </div>
       </div>
     );
@@ -91,8 +92,8 @@ const DigitalTwinDashboard = () => {
     return (
       <div className="h-full min-h-[560px] bg-bg-surface border border-border-subtle rounded-lg p-6 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-xl font-display font-bold text-status-critical">Digital Twin Unavailable</h2>
-          <p className="text-on-surface-variant mt-2">The selected site could not be loaded.</p>
+          <h2 className="text-xl font-display font-bold text-status-critical">Jumeau numerique indisponible</h2>
+          <p className="text-on-surface-variant mt-2">Le site sélectionné n’a pas pu être chargé.</p>
         </div>
       </div>
     );
@@ -102,8 +103,8 @@ const DigitalTwinDashboard = () => {
     return (
       <div className="h-full min-h-[560px] bg-bg-surface border border-border-subtle rounded-lg p-6 flex items-center justify-center">
         <div className="text-center max-w-md">
-          <h2 className="text-xl font-display font-bold text-on-surface">{siteName} Digital Twin</h2>
-          <p className="text-on-surface-variant mt-2">Coming soon. This site does not have its Digital Twin model loaded yet.</p>
+          <h2 className="text-xl font-display font-bold text-on-surface">{siteName} Jumeau numerique</h2>
+          <p className="text-on-surface-variant mt-2">Bientôt disponible. Ce site n’a pas encore de modèle de jumeau numerique chargé.</p>
         </div>
       </div>
     );
@@ -116,13 +117,13 @@ const DigitalTwinDashboard = () => {
       <div className="flex-1 bg-bg-surface border border-border-subtle rounded-lg overflow-hidden flex">
         <div className="flex-1 p-6 flex flex-col">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-sans font-medium text-on-surface">Facility Floor Plan</h3>
+            <h3 className="text-lg font-sans font-medium text-on-surface">Plan des salles</h3>
             {criticalRooms > 0 ? (
-              <Badge status="critical">{criticalRooms} Critical Room{criticalRooms > 1 ? 's' : ''}</Badge>
+              <Badge status="critical">{criticalRooms} salle{criticalRooms > 1 ? 's' : ''} critique{criticalRooms > 1 ? 's' : ''}</Badge>
             ) : warningRooms > 0 ? (
-              <Badge status="warning">{warningRooms} Room{warningRooms > 1 ? 's' : ''} Require Attention</Badge>
+              <Badge status="warning">{warningRooms} salle{warningRooms > 1 ? 's' : ''} à surveiller</Badge>
             ) : (
-              <Badge status="healthy">Rooms Healthy</Badge>
+              <Badge status="healthy">Salles saines</Badge>
             )}
           </div>
 
@@ -130,7 +131,7 @@ const DigitalTwinDashboard = () => {
             {roomSummaries.map((room: any) => (
               <RoomCard
                 key={room.id}
-                name={room.name}
+                name={displayText(room.name)}
                 status={room.status}
                 temp={Number(room.temperature.toFixed(1))}
                 healthScore={room.healthScore}

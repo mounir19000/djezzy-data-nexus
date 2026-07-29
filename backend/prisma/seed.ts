@@ -93,15 +93,15 @@ async function main() {
     where: { email: 'admin@djezzy.dz' },
     update: {
       passwordHash,
-      firstName: 'System',
-      lastName: 'Administrator',
+      firstName: 'Administrateur',
+      lastName: 'Systeme',
       roleId: superAdminRole.id
     },
     create: {
       email: 'admin@djezzy.dz',
       passwordHash,
-      firstName: 'System',
-      lastName: 'Administrator',
+      firstName: 'Administrateur',
+      lastName: 'Systeme',
       roleId: superAdminRole.id
     }
   });
@@ -143,16 +143,16 @@ async function main() {
   const algiersSite = await prisma.site.upsert({
     where: { id: 'msc01-algiers' },
     update: {
-      name: 'MSC01 Algiers',
-      location: 'Algiers, Algeria',
+      name: 'MSC01 Alger',
+      location: 'Alger, Algerie',
       latitude: 36.7538,
       longitude: 3.0588,
       overallHealth: 98
     },
     create: {
       id: 'msc01-algiers',
-      name: 'MSC01 Algiers',
-      location: 'Algiers, Algeria',
+      name: 'MSC01 Alger',
+      location: 'Alger, Algerie',
       latitude: 36.7538,
       longitude: 3.0588,
       overallHealth: 98
@@ -163,7 +163,7 @@ async function main() {
     where: { id: 'msc10-blida' },
     update: {
       name: 'MSC10 Blida',
-      location: 'Blida, Algeria',
+      location: 'Blida, Algerie',
       latitude: 36.47,
       longitude: 2.8277,
       overallHealth: 82.5
@@ -171,7 +171,7 @@ async function main() {
     create: {
       id: 'msc10-blida',
       name: 'MSC10 Blida',
-      location: 'Blida, Algeria',
+      location: 'Blida, Algerie',
       latitude: 36.47,
       longitude: 2.8277,
       overallHealth: 82.5
@@ -347,33 +347,33 @@ async function main() {
     prisma.knowledgeBase.upsert({
       where: { id: 'kb-ups-sync-recovery' },
       update: {
-        title: 'UPS Synchronization Recovery Procedure',
-        category: 'Power Systems',
-        tags: ['UPS', 'Critical', 'Electrical', 'MSC10'],
-        content: '# UPS Synchronization Recovery Procedure\n\n## Symptoms\nUPS synchronization failure, bypass alarm, or unbalanced output load.\n\n## Corrective Actions\n- Verify UPS front-panel fault code.\n- Confirm L1/L2/L3 output sequence and load balance.\n- Keep redundant UPS protection available while dispatching a UPS specialist.\n\n## Recovery\nUPS must return to inverter-protected operation with no active critical alarm.'
+        title: 'Procédure de reprise après défaut de synchronisation UPS',
+        category: 'Systèmes énergie',
+        tags: ['UPS', 'Critique', 'Électrique', 'MSC10'],
+        content: '# Procédure de reprise après défaut de synchronisation UPS\n\n## Symptômes\nDéfaut de synchronisation UPS, alarme bypass ou charge de sortie déséquilibrée.\n\n## Actions correctives\n- Vérifier le code défaut en façade de l’UPS.\n- Confirmer la séquence de sortie L1/L2/L3 et l’équilibre de charge.\n- Conserver la protection UPS redondante pendant l’intervention d’un spécialiste UPS.\n\n## Retour à la normale\nL’UPS doit revenir en fonctionnement protégé par onduleur, sans alarme critique active.'
       },
       create: {
         id: 'kb-ups-sync-recovery',
-        title: 'UPS Synchronization Recovery Procedure',
-        category: 'Power Systems',
-        tags: ['UPS', 'Critical', 'Electrical', 'MSC10'],
-        content: '# UPS Synchronization Recovery Procedure\n\n## Symptoms\nUPS synchronization failure, bypass alarm, or unbalanced output load.\n\n## Corrective Actions\n- Verify UPS front-panel fault code.\n- Confirm L1/L2/L3 output sequence and load balance.\n- Keep redundant UPS protection available while dispatching a UPS specialist.\n\n## Recovery\nUPS must return to inverter-protected operation with no active critical alarm.'
+        title: 'Procédure de reprise après défaut de synchronisation UPS',
+        category: 'Systèmes énergie',
+        tags: ['UPS', 'Critique', 'Électrique', 'MSC10'],
+        content: '# Procédure de reprise après défaut de synchronisation UPS\n\n## Symptômes\nDéfaut de synchronisation UPS, alarme bypass ou charge de sortie déséquilibrée.\n\n## Actions correctives\n- Vérifier le code défaut en façade de l’UPS.\n- Confirmer la séquence de sortie L1/L2/L3 et l’équilibre de charge.\n- Conserver la protection UPS redondante pendant l’intervention d’un spécialiste UPS.\n\n## Retour à la normale\nL’UPS doit revenir en fonctionnement protégé par onduleur, sans alarme critique active.'
       }
     }),
     prisma.knowledgeBase.upsert({
       where: { id: 'kb-cooling-high-temp' },
       update: {
-        title: 'Cooling High Temperature Response',
-        category: 'Cooling & HVAC',
-        tags: ['Cooling', 'Temperature', 'MSC10'],
-        content: '# Cooling High Temperature Response\n\n## Symptoms\nReturn-air temperature alarm or room score degradation.\n\n## Corrective Actions\n- Confirm cooling unit state and alarm panel.\n- Inspect filters and rack airflow.\n- Escalate if temperature does not recover within 15 minutes.'
+        title: 'Réponse à une température élevée de climatisation',
+        category: 'Climatisation et HVAC',
+        tags: ['Climatisation', 'Température', 'MSC10'],
+        content: '# Réponse à une température élevée de climatisation\n\n## Symptômes\nAlarme de température d’air retour ou dégradation du score de salle.\n\n## Actions correctives\n- Confirmer l’état de l’unité de climatisation et du panneau d’alarmes.\n- Inspecter les filtres et le flux d’air autour des baies.\n- Escalader si la température ne revient pas à la normale sous 15 minutes.'
       },
       create: {
         id: 'kb-cooling-high-temp',
-        title: 'Cooling High Temperature Response',
-        category: 'Cooling & HVAC',
-        tags: ['Cooling', 'Temperature', 'MSC10'],
-        content: '# Cooling High Temperature Response\n\n## Symptoms\nReturn-air temperature alarm or room score degradation.\n\n## Corrective Actions\n- Confirm cooling unit state and alarm panel.\n- Inspect filters and rack airflow.\n- Escalate if temperature does not recover within 15 minutes.'
+        title: 'Réponse à une température élevée de climatisation',
+        category: 'Climatisation et HVAC',
+        tags: ['Climatisation', 'Température', 'MSC10'],
+        content: '# Réponse à une température élevée de climatisation\n\n## Symptômes\nAlarme de température d’air retour ou dégradation du score de salle.\n\n## Actions correctives\n- Confirmer l’état de l’unité de climatisation et du panneau d’alarmes.\n- Inspecter les filtres et le flux d’air autour des baies.\n- Escalader si la température ne revient pas à la normale sous 15 minutes.'
       }
     })
   ]);
@@ -382,8 +382,8 @@ async function main() {
     prisma.expertRule.upsert({
       where: { id: 'rule-battery-temp' },
       update: {
-        name: 'Battery Room High Temperature',
-        description: 'Battery Room room-health score begins degrading above 80 percent of this threshold.',
+        name: 'Température élevée en salle batteries',
+        description: 'Le score de santé de la salle batteries commence à se dégrader au-delà de 80 pour cent de ce seuil.',
         parameter: 'DS2_BAT MSC10',
         threshold: 25,
         unit: 'C',
@@ -391,8 +391,8 @@ async function main() {
       },
       create: {
         id: 'rule-battery-temp',
-        name: 'Battery Room High Temperature',
-        description: 'Battery Room room-health score begins degrading above 80 percent of this threshold.',
+        name: 'Température élevée en salle batteries',
+        description: 'Le score de santé de la salle batteries commence à se dégrader au-delà de 80 pour cent de ce seuil.',
         parameter: 'DS2_BAT MSC10',
         threshold: 25,
         unit: 'C',
@@ -402,8 +402,8 @@ async function main() {
     prisma.expertRule.upsert({
       where: { id: 'rule-switch-temp' },
       update: {
-        name: 'Switch Room High Temperature',
-        description: 'Switch Room room-health score threshold from the Blida health methodology.',
+        name: 'Température élevée en salle switch',
+        description: 'Seuil du score de santé de la salle switch selon la méthodologie Blida.',
         parameter: 'DS2_SWITCH MSC10',
         threshold: 30,
         unit: 'C',
@@ -411,8 +411,8 @@ async function main() {
       },
       create: {
         id: 'rule-switch-temp',
-        name: 'Switch Room High Temperature',
-        description: 'Switch Room room-health score threshold from the Blida health methodology.',
+        name: 'Température élevée en salle switch',
+        description: 'Seuil du score de santé de la salle switch selon la méthodologie Blida.',
         parameter: 'DS2_SWITCH MSC10',
         threshold: 30,
         unit: 'C',
@@ -422,8 +422,8 @@ async function main() {
     prisma.expertRule.upsert({
       where: { id: 'rule-ups-load' },
       update: {
-        name: 'UPS Load Warning',
-        description: 'UPS health score degrades when maximum phase load approaches this limit.',
+        name: 'Avertissement de charge UPS',
+        description: 'Le score de santé UPS se dégrade lorsque la charge maximale par phase approche cette limite.',
         parameter: 'DS3_Output_Load_Max',
         threshold: 85,
         unit: '%',
@@ -431,8 +431,8 @@ async function main() {
       },
       create: {
         id: 'rule-ups-load',
-        name: 'UPS Load Warning',
-        description: 'UPS health score degrades when maximum phase load approaches this limit.',
+        name: 'Avertissement de charge UPS',
+        description: 'Le score de santé UPS se dégrade lorsque la charge maximale par phase approche cette limite.',
         parameter: 'DS3_Output_Load_Max',
         threshold: 85,
         unit: '%',
@@ -442,8 +442,8 @@ async function main() {
     prisma.expertRule.upsert({
       where: { id: 'rule-grid-failure' },
       update: {
-        name: 'Grid Failure Site Health Cap',
-        description: 'If all three grid phases are zero, cap the site score at 50.',
+        name: 'Plafond de santé site en cas de défaut réseau',
+        description: 'Si les trois phases réseau sont à zéro, plafonner le score du site à 50.',
         parameter: 'DS3_Input_Voltage_All_Phases',
         threshold: 0,
         unit: 'V',
@@ -451,8 +451,8 @@ async function main() {
       },
       create: {
         id: 'rule-grid-failure',
-        name: 'Grid Failure Site Health Cap',
-        description: 'If all three grid phases are zero, cap the site score at 50.',
+        name: 'Plafond de santé site en cas de défaut réseau',
+        description: 'Si les trois phases réseau sont à zéro, plafonner le score du site à 50.',
         parameter: 'DS3_Input_Voltage_All_Phases',
         threshold: 0,
         unit: 'V',

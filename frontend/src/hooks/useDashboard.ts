@@ -6,7 +6,7 @@ const fetchDashboardMetrics = async () => {
   const res = await fetch(`${API_BASE_URL}/api/dashboard/metrics`, {
     headers: { Authorization: `Bearer ${token}` }
   });
-  if (!res.ok) throw new Error('Failed to fetch dashboard metrics');
+  if (!res.ok) throw new Error('Échec du chargement des indicateurs du tableau de bord');
   return res.json();
 };
 
