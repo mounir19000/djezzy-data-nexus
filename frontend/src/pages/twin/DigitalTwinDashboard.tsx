@@ -115,8 +115,8 @@ const DigitalTwinDashboard = () => {
   return (
     <div className="space-y-6 h-full flex flex-col">
       <div className="flex-1 bg-bg-surface border border-border-subtle rounded-lg overflow-hidden flex">
-        <div className="flex-1 p-6 flex flex-col">
-          <div className="flex justify-between items-center mb-6">
+        <div className="flex-1 p-6 flex flex-col overflow-hidden">
+          <div className="flex justify-between items-center mb-6 shrink-0">
             <h3 className="text-lg font-sans font-medium text-on-surface">Plan des salles</h3>
             {criticalRooms > 0 ? (
               <Badge status="critical">{criticalRooms} salle{criticalRooms > 1 ? 's' : ''} critique{criticalRooms > 1 ? 's' : ''}</Badge>
@@ -127,22 +127,24 @@ const DigitalTwinDashboard = () => {
             )}
           </div>
 
-          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 min-h-[500px] auto-rows-max content-start">
-            {roomSummaries.map((room: any) => (
-              <RoomCard
-                key={room.id}
-                name={displayText(room.name)}
-                status={room.status}
-                temp={Number(room.temperature.toFixed(1))}
-                healthScore={room.healthScore}
-                tickets={room.openTickets}
-                alarms={room.activeAlarms}
-                equipmentCount={room.equipmentCount}
+          <div className="flex-1 overflow-y-auto pr-2 min-h-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-max content-start">
+              {roomSummaries.map((room: any) => (
+                <RoomCard
+                  key={room.id}
+                  name={displayText(room.name)}
+                  status={room.status}
+                  temp={Number(room.temperature.toFixed(1))}
+                  healthScore={room.healthScore}
+                  tickets={room.openTickets}
+                  alarms={room.activeAlarms}
+                  equipmentCount={room.equipmentCount}
 
-                selected={selectedRoomId === room.id}
-                onClick={() => setSelectedRoomId(room.id)}
-              />
-            ))}
+                  selected={selectedRoomId === room.id}
+                  onClick={() => setSelectedRoomId(room.id)}
+                />
+              ))}
+            </div>
           </div>
         </div>
         
