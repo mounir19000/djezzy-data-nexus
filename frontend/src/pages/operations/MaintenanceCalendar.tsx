@@ -10,10 +10,11 @@ import { useAppStore } from '../../store/useAppStore';
 import MaintenanceScheduler from '../../components/maintenance/MaintenanceScheduler';
 import MaintenanceTaskModal from '../../components/maintenance/MaintenanceTaskModal';
 import MaintenanceScheduleModal from '../../components/maintenance/MaintenanceScheduleModal';
+import { API_BASE_URL } from '../../lib/api';
 
 const fetchSchedules = async () => {
   const token = localStorage.getItem('djezzy_token');
-  const res = await fetch(`http://localhost:4000/api/maintenance/schedules`, {
+  const res = await fetch(`${API_BASE_URL}/api/maintenance/schedules`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   if (!res.ok) throw new Error('Failed to fetch schedules');

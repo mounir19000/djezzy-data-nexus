@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Play, Pause, RotateCcw } from 'lucide-react';
-import { useAppStore } from '../../store/useAppStore';
+import { API_BASE_URL } from '../../lib/api';
 
 interface SimulationStatus {
   isRunning: boolean;
@@ -11,15 +11,11 @@ interface SimulationStatus {
 const SimulationControl = () => {
   const [status, setStatus] = useState<SimulationStatus | null>(null);
   const [isHovered, setIsHovered] = useState(false);
-  const user = useAppStore((state) => state.user);
-
-  // Optional: Restrict to Super Admin if you want.
-  // if (user?.role !== 'Super Admin') return null;
 
   const fetchStatus = async () => {
     try {
       const token = localStorage.getItem('djezzy_token');
-      const res = await fetch('http://localhost:4000/api/simulation/status', {
+      const res = await fetch(`${API_BASE_URL}/api/simulation/status`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -40,7 +36,7 @@ const SimulationControl = () => {
   const handleAction = async (action: 'pause' | 'resume' | 'reset') => {
     try {
       const token = localStorage.getItem('djezzy_token');
-      const res = await fetch(`http://localhost:4000/api/simulation/${action}`, {
+      const res = await fetch(`${API_BASE_URL}/api/simulation/${action}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });

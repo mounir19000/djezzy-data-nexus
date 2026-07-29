@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { API_BASE_URL } from '../lib/api';
 
 const fetchRules = async (siteId?: string) => {
   const token = localStorage.getItem('djezzy_token');
   const url = siteId 
-    ? `http://localhost:4000/api/settings/rules?siteId=${siteId}`
-    : 'http://localhost:4000/api/settings/rules';
+    ? `${API_BASE_URL}/api/settings/rules?siteId=${siteId}`
+    : `${API_BASE_URL}/api/settings/rules`;
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` }
   });
@@ -24,7 +25,7 @@ export const useUpdateRule = () => {
   return useMutation({
     mutationFn: async ({ id, threshold }: { id: string, threshold: number }) => {
       const token = localStorage.getItem('djezzy_token');
-      const res = await fetch(`http://localhost:4000/api/settings/rules/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/settings/rules/${id}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',

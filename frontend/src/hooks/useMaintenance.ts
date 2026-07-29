@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { API_BASE_URL } from '../lib/api';
 
 const fetchMaintenanceTasks = async () => {
   const token = localStorage.getItem('djezzy_token');
-  const res = await fetch('http://localhost:4000/api/maintenance', {
+  const res = await fetch(`${API_BASE_URL}/api/maintenance`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   if (!res.ok) throw new Error('Failed to fetch maintenance tasks');
@@ -27,7 +28,7 @@ export const useCreateMaintenanceTask = () => {
       scheduledDate: string;
     }) => {
       const token = localStorage.getItem('djezzy_token');
-      const res = await fetch('http://localhost:4000/api/maintenance', {
+      const res = await fetch(`${API_BASE_URL}/api/maintenance`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

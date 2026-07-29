@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, CheckCircle, FileText, User, Calendar, Settings } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Badge from '../ui/Badge';
+import { API_BASE_URL } from '../../lib/api';
 import { useAppStore } from '../../store/useAppStore';
 
 interface MaintenanceTaskModalProps {
@@ -23,7 +24,7 @@ const MaintenanceTaskModal: React.FC<MaintenanceTaskModalProps> = ({ task, onClo
   const completeTask = useMutation({
     mutationFn: async (data: any) => {
       const token = localStorage.getItem('djezzy_token');
-      const res = await fetch(`http://localhost:4000/api/maintenance/tasks/${task.id}/report`, {
+      const res = await fetch(`${API_BASE_URL}/api/maintenance/tasks/${task.id}/report`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

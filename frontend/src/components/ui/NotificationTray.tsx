@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Bell, Check, List } from 'lucide-react';
+import { API_BASE_URL } from '../../lib/api';
 
 interface Notification {
   id: string;
@@ -39,7 +40,7 @@ export const NotificationTray = () => {
       const token = localStorage.getItem('djezzy_token');
       if (!token) return;
 
-      const res = await fetch('http://localhost:4000/api/notifications?limit=6', {
+      const res = await fetch(`${API_BASE_URL}/api/notifications?limit=6`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -54,7 +55,7 @@ export const NotificationTray = () => {
   const markAsRead = async (id: string) => {
     try {
       const token = localStorage.getItem('djezzy_token');
-      await fetch(`http://localhost:4000/api/notifications/${id}/read`, {
+      await fetch(`${API_BASE_URL}/api/notifications/${id}/read`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -67,7 +68,7 @@ export const NotificationTray = () => {
   const markAllAsRead = async () => {
     try {
       const token = localStorage.getItem('djezzy_token');
-      await fetch(`http://localhost:4000/api/notifications/read-all`, {
+      await fetch(`${API_BASE_URL}/api/notifications/read-all`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}` }
       });

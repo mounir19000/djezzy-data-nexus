@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { API_BASE_URL } from '../lib/api';
 import { useTelemetryStore } from '../store/useTelemetryStore';
 
-export const useSocket = (url: string = 'http://localhost:4000') => {
+export const useSocket = (url: string = API_BASE_URL) => {
   const socketRef = useRef<Socket | null>(null);
   const updateTelemetry = useTelemetryStore(state => state.updateTelemetry);
 

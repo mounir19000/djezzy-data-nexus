@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Clock, AlertTriangle, Users } from 'lucide-react';
 import Badge from '../ui/Badge';
+import { API_BASE_URL } from '../../lib/api';
 import { useAppStore } from '../../store/useAppStore';
 
 interface MaintenanceSchedulerProps {
@@ -10,7 +11,7 @@ interface MaintenanceSchedulerProps {
 
 const fetchSchedules = async () => {
   const token = localStorage.getItem('djezzy_token');
-  const res = await fetch(`http://localhost:4000/api/maintenance/schedules`, {
+  const res = await fetch(`${API_BASE_URL}/api/maintenance/schedules`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   if (!res.ok) throw new Error('Failed to fetch schedules');
@@ -19,7 +20,7 @@ const fetchSchedules = async () => {
 
 const fetchEngineers = async () => {
   const token = localStorage.getItem('djezzy_token');
-  const res = await fetch(`http://localhost:4000/api/users`, {
+  const res = await fetch(`${API_BASE_URL}/api/users`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   if (!res.ok) throw new Error('Failed to fetch users');
@@ -30,14 +31,14 @@ const fetchEngineers = async () => {
 const fetchEquipment = async (siteId?: string, user?: any) => {
   const token = localStorage.getItem('djezzy_token');
   if (siteId) {
-    const res = await fetch(`http://localhost:4000/api/sites/${siteId}`, {
+    const res = await fetch(`${API_BASE_URL}/api/sites/${siteId}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     if (!res.ok) throw new Error('Failed to fetch equipment');
     const data = await res.json();
     return data.rooms?.flatMap((r: any) => r.equipments?.map((eq:any) => ({...eq, siteName: data.name}))) || [];
   } else {
-    const res = await fetch(`http://localhost:4000/api/sites`, {
+    const res = await fetch(`${API_BASE_URL}/api/sites`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     if (!res.ok) throw new Error('Failed to fetch equipment');
@@ -70,7 +71,7 @@ const MaintenanceScheduler: React.FC<MaintenanceSchedulerProps> = ({ siteId }) =
   const createSchedule = useMutation({
     mutationFn: async (data: any) => {
       const token = localStorage.getItem('djezzy_token');
-      const res = await fetch('http://localhost:4000/api/maintenance/schedules', {
+      const res = await fetch(`${API_BASE_URL}/api/maintenance/schedules`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -93,7 +94,7 @@ const MaintenanceScheduler: React.FC<MaintenanceSchedulerProps> = ({ siteId }) =
   const createSuddenTask = useMutation({
     mutationFn: async (data: any) => {
       const token = localStorage.getItem('djezzy_token');
-      const res = await fetch('http://localhost:4000/api/maintenance', {
+      const res = await fetch(`${API_BASE_URL}/api/maintenance`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
