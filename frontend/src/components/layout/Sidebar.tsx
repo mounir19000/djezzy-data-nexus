@@ -15,7 +15,7 @@ const Sidebar = () => {
   };
 
   const isSuperAdmin = user?.role === 'Super Admin';
-  const canManageMaintenance = isSuperAdmin || user?.role === 'Engineer';
+  const canManageMaintenance = ['Super Admin', 'Engineer', 'Site Operator'].includes(user?.role || '');
   const assignedSiteIds = user?.siteIds || ['msc10-blida'];
   const displaySites = isSuperAdmin ? sites : sites?.filter((site: any) => assignedSiteIds.includes(site.id));
 

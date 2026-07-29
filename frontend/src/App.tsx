@@ -72,7 +72,7 @@ function App() {
           <Route path="incidents" element={<IncidentDiagnosisCenter />} />
           <Route path="tickets" element={<TicketKanban />} />
           <Route path="maintenance" element={
-            <RoleBoundary allowedRoles={['Super Admin', 'Engineer']}>
+            <RoleBoundary allowedRoles={['Super Admin', 'Engineer', 'Site Operator']}>
               <MaintenanceCalendar />
             </RoleBoundary>
           } />

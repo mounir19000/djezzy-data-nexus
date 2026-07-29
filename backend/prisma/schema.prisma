@@ -14,13 +14,15 @@ model User {
   lastName         String            @map("last_name")
   roleId           String            @map("role_id")
   role             Role              @relation(fields: [roleId], references: [id])
-  tickets          Ticket[]
-  ticketReports    TicketReport[]    @relation("TicketReportSubmitter")
-  maintenanceTasks MaintenanceTask[]
-  notifications    Notification[]
-  siteAssignments  SiteAssignment[]
-  createdAt        DateTime          @default(now()) @map("created_at")
-  updatedAt        DateTime          @updatedAt @map("updated_at")
+  tickets              Ticket[]
+  ticketReports        TicketReport[]      @relation("TicketReportSubmitter")
+  maintenanceTasks     MaintenanceTask[]
+  maintenanceReports   MaintenanceReport[] @relation("MaintenanceReportSubmitter")
+  maintenanceSchedules MaintenanceSchedule[]
+  notifications        Notification[]
+  siteAssignments      SiteAssignment[]
+  createdAt            DateTime            @default(now()) @map("created_at")
+  updatedAt            DateTime            @updatedAt @map("updated_at")
 
   @@map("users")
 }
@@ -82,9 +84,10 @@ model Equipment {
   type             String // UPS, CRAC, Generator, Battery
   status           String            @default("healthy") // healthy, warning, critical, offline
   telemetry        Telemetry[]
-  alarms           Alarm[]
-  tickets          Ticket[]
-  maintenanceTasks MaintenanceTask[]
+  alarms               Alarm[]
+  tickets              Ticket[]
+  maintenanceTasks     MaintenanceTask[]
+  maintenanceSchedules MaintenanceSchedule[]
 
   @@map("equipments")
 }
@@ -162,10 +165,41 @@ model MaintenanceTask {
   status        String    @default("pending") // pending, inProgress, completed
   assignedTo    String?   @map("assigned_to")
   assignee      User?     @relation(fields: [assignedTo], references: [id])
+  report        MaintenanceReport?
   scheduledDate DateTime  @map("scheduled_date")
   createdAt     DateTime  @default(now()) @map("created_at")
 
   @@map("maintenance_tasks")
+}
+
+model MaintenanceReport {
+  id            String   @id @default(uuid())
+  taskId        String   @unique @map("task_id")
+  task          MaintenanceTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  submittedById String   @map("submitted_by_id")
+  submitter     User     @relation("MaintenanceReportSubmitter", fields: [submittedById], references: [id])
+  actionTaken   String   @map("action_taken")
+  currentState  String   @map("current_state")
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("maintenance_reports")
+}
+
+model MaintenanceSchedule {
+  id          String    @id @default(uuid())
+  equipmentId String    @map("equipment_id")
+  equipment   Equipment @relation(fields: [equipmentId], references: [id])
+  title       String
+  recurrence  String // weekly, monthly
+  assignedTo  String?   @map("assigned_to")
+  assignee    User?     @relation(fields: [assignedTo], references: [id])
+  startDate   DateTime  @map("start_date")
+  nextRunDate DateTime  @map("next_run_date")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@map("maintenance_schedules")
 }
 
 model KnowledgeBase {

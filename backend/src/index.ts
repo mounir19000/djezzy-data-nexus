@@ -15,6 +15,7 @@ import dashboardRoutes from './routes/dashboard';
 import sitesRoutes from './routes/sites';
 import usersRoutes from './routes/users';
 import { startTelemetrySimulation } from './services/telemetrySimulator';
+import { startMaintenanceCron } from './services/maintenanceCron';
 
 dotenv.config();
 
@@ -68,6 +69,7 @@ io.on('connection', (socket) => {
 });
 
 startTelemetrySimulation(io);
+startMaintenanceCron();
 
 httpServer.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
