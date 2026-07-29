@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Map, Activity, Calendar, FileText, ShieldAlert, Cpu, LogOut, Gauge, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Map, Activity, Calendar, FileText, ShieldAlert, Cpu, LogOut, Gauge, ChevronLeft, ChevronRight, History } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useSites } from '../../hooks/useSites';
 
@@ -101,7 +101,10 @@ const Sidebar = () => {
 
         <SidebarSectionLabel label="Operations" isCollapsed={isCollapsed} />
         {canManageMaintenance && (
-          <SidebarNavLink to="/maintenance" label="Maintenance" icon={<Calendar className="w-5 h-5" />} isCollapsed={isCollapsed} />
+          <>
+            <SidebarNavLink to="/maintenance" label="Maintenance" icon={<Calendar className="w-5 h-5" />} isCollapsed={isCollapsed} />
+            <SidebarNavLink to="/mantainancehistory" label="Maintenance History" icon={<History className="w-5 h-5" />} isCollapsed={isCollapsed} />
+          </>
         )}
         <SidebarNavLink to="/knowledge" label="Knowledge Center" icon={<FileText className="w-5 h-5" />} isCollapsed={isCollapsed} />
       </nav>

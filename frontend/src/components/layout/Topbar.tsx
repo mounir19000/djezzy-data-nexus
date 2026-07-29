@@ -86,6 +86,10 @@ const Topbar = () => {
         title: 'Maintenance & Scheduling',
         subtitle: 'Preventative maintenance and inspection schedules.'
       },
+      '/mantainancehistory': {
+        title: 'Maintenance History',
+        subtitle: 'Completed maintenance records, reports, and equipment state.'
+      },
       '/knowledge': {
         title: 'Knowledge Center',
         subtitle: 'Engineering documentation and standard operating procedures.'

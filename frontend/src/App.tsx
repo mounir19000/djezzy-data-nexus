@@ -7,6 +7,7 @@ import PowerFlowView from './pages/twin/PowerFlowView';
 import IncidentDiagnosisCenter from './pages/operations/IncidentDiagnosisCenter';
 import TicketKanban from './pages/operations/TicketKanban';
 import MaintenanceCalendar from './pages/operations/MaintenanceCalendar';
+import MaintenanceHistory from './pages/operations/MaintenanceHistory';
 import KnowledgeCenter from './pages/operations/KnowledgeCenter';
 import Reports from './pages/operations/Reports';
 import NotificationsPage from './pages/operations/NotificationsPage';
@@ -68,6 +69,11 @@ function App() {
           <Route path="maintenance" element={
             <RoleBoundary allowedRoles={['Super Admin', 'Engineer', 'Site Operator']}>
               <MaintenanceCalendar />
+            </RoleBoundary>
+          } />
+          <Route path="mantainancehistory" element={
+            <RoleBoundary allowedRoles={['Super Admin', 'Engineer', 'Site Operator']}>
+              <MaintenanceHistory />
             </RoleBoundary>
           } />
           <Route path="knowledge" element={<KnowledgeCenter />} />

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Play, Pause, RotateCcw } from 'lucide-react';
+import { Play, Pause, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
 import { API_BASE_URL } from '../../lib/api';
 
 interface SimulationStatus {
@@ -11,6 +11,7 @@ interface SimulationStatus {
 const SimulationControl = () => {
   const [status, setStatus] = useState<SimulationStatus | null>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const fetchStatus = async () => {
     try {
@@ -63,54 +64,65 @@ const SimulationControl = () => {
     >
       <div className="bg-bg-surface border border-border-subtle rounded-xl shadow-lg overflow-hidden flex flex-col w-64 backdrop-blur-md bg-bg-surface/90">
         <div className="px-4 py-2 bg-bg-secondary/50 border-b border-border-subtle flex justify-between items-center">
-          <span className="text-xs font-mono text-on-surface-variant uppercase tracking-wider font-semibold">
-            Telemetry Sim
-          </span>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="p-1 hover:bg-bg-surface rounded text-on-surface-variant hover:text-on-surface transition-colors -ml-1"
+              title={isCollapsed ? "Expand" : "Collapse"}
+            >
+              {isCollapsed ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
+            <span className="text-xs font-mono text-on-surface-variant uppercase tracking-wider font-semibold">
+              Telemetry Sim
+            </span>
+          </div>
           <span className={`w-2 h-2 rounded-full ${status.isRunning ? 'bg-status-success animate-pulse' : 'bg-status-warning'}`}></span>
         </div>
         
-        <div className="p-4 flex flex-col gap-3">
-          <div className="flex justify-between items-center text-sm font-mono text-on-surface">
-            <span>{status.cursor} / {status.totalRows}</span>
-            <span className="text-primary">{progressPercentage}%</span>
-          </div>
+        {!isCollapsed && (
+          <div className="p-4 flex flex-col gap-3">
+            <div className="flex justify-between items-center text-sm font-mono text-on-surface">
+              <span>{status.cursor} / {status.totalRows}</span>
+              <span className="text-primary">{progressPercentage}%</span>
+            </div>
 
-          {/* Progress bar */}
-          <div className="h-1.5 w-full bg-bg-secondary rounded-full overflow-hidden">
-            <div 
-              className={`h-full transition-all duration-300 ${status.isRunning ? 'bg-primary' : 'bg-status-warning'}`}
-              style={{ width: `${progressPercentage}%` }}
-            ></div>
-          </div>
+            {/* Progress bar */}
+            <div className="h-1.5 w-full bg-bg-secondary rounded-full overflow-hidden">
+              <div 
+                className={`h-full transition-all duration-300 ${status.isRunning ? 'bg-primary' : 'bg-status-warning'}`}
+                style={{ width: `${progressPercentage}%` }}
+              ></div>
+            </div>
 
-          <div className="flex justify-between mt-1">
-            <button
-              onClick={() => handleAction('reset')}
-              className="p-2 rounded-lg bg-bg-secondary text-on-surface hover:bg-bg-surface hover:text-primary transition-colors border border-transparent hover:border-border-subtle"
-              title="Reset Simulation"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-            
-            {status.isRunning ? (
+            <div className="flex justify-between mt-1">
               <button
-                onClick={() => handleAction('pause')}
-                className="p-2 px-4 rounded-lg bg-status-warning/10 text-status-warning hover:bg-status-warning/20 transition-colors flex items-center gap-2 border border-status-warning/20"
+                onClick={() => handleAction('reset')}
+                className="p-2 rounded-lg bg-bg-secondary text-on-surface hover:bg-bg-surface hover:text-primary transition-colors border border-transparent hover:border-border-subtle"
+                title="Reset Simulation"
               >
-                <Pause className="w-4 h-4" />
-                <span className="text-sm font-medium">Pause</span>
+                <RotateCcw className="w-4 h-4" />
               </button>
-            ) : (
-              <button
-                onClick={() => handleAction('resume')}
-                className="p-2 px-4 rounded-lg bg-status-success/10 text-status-success hover:bg-status-success/20 transition-colors flex items-center gap-2 border border-status-success/20"
-              >
-                <Play className="w-4 h-4" />
-                <span className="text-sm font-medium">Play</span>
-              </button>
-            )}
+              
+              {status.isRunning ? (
+                <button
+                  onClick={() => handleAction('pause')}
+                  className="p-2 px-4 rounded-lg bg-status-warning/10 text-status-warning hover:bg-status-warning/20 transition-colors flex items-center gap-2 border border-status-warning/20"
+                >
+                  <Pause className="w-4 h-4" />
+                  <span className="text-sm font-medium">Pause</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleAction('resume')}
+                  className="p-2 px-4 rounded-lg bg-status-success/10 text-status-success hover:bg-status-success/20 transition-colors flex items-center gap-2 border border-status-success/20"
+                >
+                  <Play className="w-4 h-4" />
+                  <span className="text-sm font-medium">Play</span>
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { X, CheckCircle, FileText, User, Calendar, Settings } from 'lucide-react';
+import { X, CheckCircle, FileText, User, Calendar, Settings, Trash2, AlertTriangle } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Badge from '../ui/Badge';
 import { API_BASE_URL } from '../../lib/api';
 import { useAppStore } from '../../store/useAppStore';
+import { useDeleteMaintenanceTask } from '../../hooks/useMaintenance';
 
 interface MaintenanceTaskModalProps {
   task: any;
@@ -14,12 +15,16 @@ const MaintenanceTaskModal: React.FC<MaintenanceTaskModalProps> = ({ task, onClo
   const user = useAppStore((state: any) => state.user);
   const queryClient = useQueryClient();
   const [isReporting, setIsReporting] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   
   const [actionTaken, setActionTaken] = useState('');
   const [currentState, setCurrentState] = useState('Healthy');
   const [notes, setNotes] = useState('');
 
   const canComplete = task.status !== 'completed' && (user?.id === task.assignedTo || user?.role === 'Super Admin' || user?.role === 'Site Operator');
+  const canDelete = ['Super Admin', 'Site Operator'].includes(user?.role || '');
+  const deleteTask = useDeleteMaintenanceTask();
 
   const completeTask = useMutation({
     mutationFn: async (data: any) => {
@@ -36,7 +41,10 @@ const MaintenanceTaskModal: React.FC<MaintenanceTaskModalProps> = ({ task, onClo
       return res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['maintenance'] });
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['maintenance-history'] });
+      queryClient.invalidateQueries({ queryKey: ['schedules'] });
       queryClient.invalidateQueries({ queryKey: ['site-dashboard'] });
       onClose();
     }
@@ -45,6 +53,14 @@ const MaintenanceTaskModal: React.FC<MaintenanceTaskModalProps> = ({ task, onClo
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     completeTask.mutate({ actionTaken, currentState, notes });
+  };
+
+  const handleDelete = () => {
+    setDeleteError('');
+    deleteTask.mutate(task.id, {
+      onSuccess: onClose,
+      onError: (error) => setDeleteError(error.message)
+    });
   };
 
   return (
@@ -199,24 +215,71 @@ const MaintenanceTaskModal: React.FC<MaintenanceTaskModalProps> = ({ task, onClo
             </form>
           )}
 
+          {deleteError && (
+            <div className="bg-status-critical/10 border border-status-critical/30 text-status-critical text-sm px-4 py-3 rounded-md flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>{deleteError}</span>
+            </div>
+          )}
+
         </div>
 
         {/* Footer Actions */}
         {!isReporting && (
-          <div className="p-4 border-t border-border-subtle flex justify-end gap-3 bg-bg-secondary/30">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 rounded-md font-medium text-on-surface hover:bg-bg-surface transition-colors border border-border-subtle"
-            >
-              Close
-            </button>
-            {canComplete && (
-              <button
-                onClick={() => setIsReporting(true)}
-                className="bg-primary text-on-primary px-4 py-2 rounded-md font-medium hover:bg-primary-fixed-dim transition-colors flex items-center gap-2"
-              >
-                <CheckCircle className="w-4 h-4" /> Complete Task
-              </button>
+          <div className="p-4 border-t border-border-subtle bg-bg-secondary/30">
+            {isConfirmingDelete ? (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <p className="text-sm text-on-surface-variant">
+                  Remove this maintenance task permanently?
+                </p>
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsConfirmingDelete(false)}
+                    className="px-4 py-2 rounded-md font-medium text-on-surface hover:bg-bg-surface transition-colors border border-border-subtle"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={deleteTask.isPending}
+                    onClick={handleDelete}
+                    className="bg-status-critical text-white px-4 py-2 rounded-md font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" /> {deleteTask.isPending ? 'Removing...' : 'Remove'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-between gap-3">
+                {canDelete ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsConfirmingDelete(true)}
+                    className="px-4 py-2 rounded-md font-medium text-status-critical hover:bg-status-critical/10 transition-colors border border-status-critical/30 flex items-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" /> Remove
+                  </button>
+                ) : (
+                  <div />
+                )}
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={onClose}
+                    className="px-4 py-2 rounded-md font-medium text-on-surface hover:bg-bg-surface transition-colors border border-border-subtle"
+                  >
+                    Close
+                  </button>
+                  {canComplete && (
+                    <button
+                      onClick={() => setIsReporting(true)}
+                      className="bg-primary text-on-primary px-4 py-2 rounded-md font-medium hover:bg-primary-fixed-dim transition-colors flex items-center gap-2"
+                    >
+                      <CheckCircle className="w-4 h-4" /> Complete Task
+                    </button>
+                  )}
+                </div>
+              </div>
             )}
           </div>
         )}

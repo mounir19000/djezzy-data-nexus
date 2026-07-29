@@ -30,6 +30,10 @@ export const useSocket = (url: string = API_BASE_URL) => {
       window.dispatchEvent(new Event('ticket_update'));
     });
 
+    socketRef.current.on('maintenance_update', () => {
+      window.dispatchEvent(new Event('maintenance_update'));
+    });
+
     socketRef.current.on('disconnect', () => {
       console.log('Disconnected from telemetry service');
     });
