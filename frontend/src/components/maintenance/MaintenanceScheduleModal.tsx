@@ -1,5 +1,7 @@
-import React from 'react';
-import { X, Calendar, User, Repeat } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Calendar, User, Repeat, Trash2, AlertTriangle } from 'lucide-react';
+import { useDeleteMaintenanceSchedule } from '../../hooks/useMaintenance';
+import { useAppStore } from '../../store/useAppStore';
 
 interface MaintenanceScheduleModalProps {
   schedule: any;
@@ -7,9 +9,22 @@ interface MaintenanceScheduleModalProps {
 }
 
 const MaintenanceScheduleModal: React.FC<MaintenanceScheduleModalProps> = ({ schedule, onClose }) => {
+  const user = useAppStore((state: any) => state.user);
+  const canDelete = ['Super Admin', 'Site Operator'].includes(user?.role || '');
+  const deleteSchedule = useDeleteMaintenanceSchedule();
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   const targetDate = schedule.projectedDate || new Date(schedule.nextRunDate);
   const generationDate = new Date(targetDate);
   generationDate.setDate(generationDate.getDate() - 1);
+
+  const handleDelete = () => {
+    setDeleteError('');
+    deleteSchedule.mutate(schedule.id, {
+      onSuccess: onClose,
+      onError: (error) => setDeleteError(error.message)
+    });
+  };
   
   return (
     <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4 overflow-y-auto">
@@ -75,16 +90,61 @@ const MaintenanceScheduleModal: React.FC<MaintenanceScheduleModalProps> = ({ sch
               </div>
             </div>
           </div>
+
+          {deleteError && (
+            <div className="bg-status-critical/10 border border-status-critical/30 text-status-critical text-sm px-4 py-3 rounded-md flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>{deleteError}</span>
+            </div>
+          )}
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 border-t border-border-subtle flex justify-end bg-bg-secondary/30">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-md font-medium text-on-surface hover:bg-bg-surface transition-colors border border-border-subtle"
-          >
-            Close
-          </button>
+        <div className="p-4 border-t border-border-subtle bg-bg-secondary/30">
+          {isConfirmingDelete ? (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <p className="text-sm text-on-surface-variant">
+                Remove this recurring schedule permanently?
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsConfirmingDelete(false)}
+                  className="px-4 py-2 rounded-md font-medium text-on-surface hover:bg-bg-surface transition-colors border border-border-subtle"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={deleteSchedule.isPending}
+                  onClick={handleDelete}
+                  className="bg-status-critical text-white px-4 py-2 rounded-md font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" /> {deleteSchedule.isPending ? 'Removing...' : 'Remove'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-between gap-3">
+              {canDelete ? (
+                <button
+                  type="button"
+                  onClick={() => setIsConfirmingDelete(true)}
+                  className="px-4 py-2 rounded-md font-medium text-status-critical hover:bg-status-critical/10 transition-colors border border-status-critical/30 flex items-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" /> Remove
+                </button>
+              ) : (
+                <div />
+              )}
+              <button
+                onClick={onClose}
+                className="px-4 py-2 rounded-md font-medium text-on-surface hover:bg-bg-surface transition-colors border border-border-subtle"
+              >
+                Close
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

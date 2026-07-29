@@ -84,6 +84,8 @@ const MaintenanceScheduler: React.FC<MaintenanceSchedulerProps> = ({ siteId }) =
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['schedules'] });
+      queryClient.invalidateQueries({ queryKey: ['site-dashboard', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       setTitle('');
       setEquipmentId('');
       setAssignedTo('');
@@ -107,8 +109,11 @@ const MaintenanceScheduler: React.FC<MaintenanceSchedulerProps> = ({ siteId }) =
     },
     onSuccess: () => {
       // Invalidate dashboard maintenance tasks
+      queryClient.invalidateQueries({ queryKey: ['maintenance'] });
       queryClient.invalidateQueries({ queryKey: ['site-dashboard', siteId] });
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['maintenance-history'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       setTitle('');
       setEquipmentId('');
       setAssignedTo('');

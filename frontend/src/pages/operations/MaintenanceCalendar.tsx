@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Calendar as CalendarIcon, Clock, AlertTriangle, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Calendar as CalendarIcon, Clock, AlertTriangle, X, History } from 'lucide-react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -30,6 +31,7 @@ const MaintenanceCalendar = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any | null>(null);
   const [selectedSchedule, setSelectedSchedule] = useState<any | null>(null);
+  const upcomingTasks = useMemo(() => tasks?.filter((task: any) => task.status !== 'completed') || [], [tasks]);
 
   const events = useMemo(() => {
     const taskEvents = tasks?.map((task: any) => {
@@ -81,7 +83,13 @@ const MaintenanceCalendar = () => {
 
   return (
     <div className="h-full flex flex-col space-y-6 relative">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-3">
+        <Link
+          to="/mantainancehistory"
+          className="bg-bg-surface border border-border-subtle text-on-surface px-5 py-2.5 rounded-lg font-sans font-medium hover:border-primary hover:text-primary transition-colors flex items-center gap-2"
+        >
+          <History className="w-4 h-4" /> History
+        </Link>
         {canSchedule && (
           <button 
             onClick={() => setIsModalOpen(true)}
@@ -128,15 +136,20 @@ const MaintenanceCalendar = () => {
             
             {isTasksLoading ? (
               <div className="text-on-surface-variant text-sm">Loading tasks...</div>
-            ) : tasks?.length === 0 ? (
+            ) : upcomingTasks.length === 0 ? (
               <div className="text-on-surface-variant text-sm italic">No upcoming maintenance scheduled.</div>
             ) : (
-              tasks?.map((task: any) => {
+              upcomingTasks.map((task: any) => {
                 const isOverdue = new Date(task.scheduledDate) < new Date() && task.status !== 'completed';
                 const isSoon = new Date(task.scheduledDate).getTime() - new Date().getTime() < 172800000; // < 2 days
                 
                 return (
-                  <div key={task.id} className={`bg-background rounded-lg p-4 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md cursor-default border-l-4 ${isOverdue ? 'border-l-status-critical border border-status-critical/30' : isSoon ? 'border-l-status-warning border border-status-warning/30' : 'border-l-primary border border-border-subtle'}`}>
+                  <button
+                    key={task.id}
+                    type="button"
+                    onClick={() => setSelectedTask(task)}
+                    className={`w-full text-left bg-background rounded-lg p-4 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md cursor-pointer border-l-4 ${isOverdue ? 'border-l-status-critical border border-status-critical/30' : isSoon ? 'border-l-status-warning border border-status-warning/30' : 'border-l-primary border border-border-subtle'}`}
+                  >
                     <div className="flex justify-between items-start mb-3">
                       <span className="text-sm font-sans font-semibold text-on-surface line-clamp-2">{task.title}</span>
                       <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ml-2 ${
@@ -147,7 +160,10 @@ const MaintenanceCalendar = () => {
                         {isOverdue ? 'Overdue' : new Date(task.scheduledDate).toLocaleDateString()}
                       </span>
                     </div>
-                    <p className="text-xs text-on-surface-variant mb-3 flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-on-surface-variant/40" /> {task.equipment?.name || 'General'}</p>
+                    <div className="text-xs text-on-surface-variant mb-3 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-on-surface-variant/40" />
+                      {task.equipment?.name || 'General'}
+                    </div>
                     <div className="flex justify-between items-center text-xs">
                       <span className="flex items-center gap-1.5 text-on-surface-variant bg-bg-secondary px-2 py-1 rounded">
                         {isOverdue ? <AlertTriangle className="w-3.5 h-3.5 text-status-critical" /> : <Clock className="w-3.5 h-3.5 text-primary" />} 
@@ -155,7 +171,7 @@ const MaintenanceCalendar = () => {
                       </span>
                       <span className="text-on-surface-variant">Assigned: <span className="font-medium text-on-surface">{task.assignee ? task.assignee.firstName : 'Unassigned'}</span></span>
                     </div>
-                  </div>
+                  </button>
                 );
               })
             )}
