@@ -196,7 +196,6 @@ Categories include:
 * AI Assistant
 * Knowledge Base
 * Report
-* Analytics
 * Settings
 ________________
 

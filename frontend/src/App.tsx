@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useSearchParams } from 'react-router-dom';
 import MainLayout from './components/layout/MainLayout';
 import NationalOperationsDashboard from './pages/national/NationalOperationsDashboard';
-import NationalAnalyticsDashboard from './pages/national/NationalAnalyticsDashboard';
 import SiteDashboard from './pages/sites/SiteDashboard';
 import DigitalTwinDashboard from './pages/twin/DigitalTwinDashboard';
 import PowerFlowView from './pages/twin/PowerFlowView';
@@ -55,11 +54,6 @@ function App() {
         }>
           {/* Default Route */}
           <Route index element={<RoleHome />} />
-          <Route path="analytics" element={
-            <RoleBoundary allowedRoles={['Super Admin']}>
-              <NationalAnalyticsDashboard />
-            </RoleBoundary>
-          } />
           <Route path="sites/:siteId" element={<Navigate to="dashboard" replace />} />
           <Route path="sites/:siteId/dashboard" element={<SiteDashboard />} />
           <Route path="sites/:siteId/digital-twin" element={<DigitalTwinDashboard />} />

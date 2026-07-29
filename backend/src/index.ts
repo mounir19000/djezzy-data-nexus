@@ -87,7 +87,7 @@ app.use('/api/sites', sitesRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/simulation', simulationRoutes);
 app.get('/api/health', (req: Request, res: Response) => {
-  res.status(200).json({ status: 'healthy', message: 'Djezzy SSOP API is running' });
+  res.status(200).json({ status: 'healthy', message: 'DDN API is running' });
 });
 
 // Global Error Handler

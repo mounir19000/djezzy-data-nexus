@@ -7,15 +7,16 @@ import SimulationControl from '../common/SimulationControl';
 
 const MainLayout = () => {
   const { isSidebarOpen } = useAppStore((state: any) => state);
+  const sidebarOffset = isSidebarOpen ? 'ml-[280px]' : 'ml-[76px]';
 
   // Initialize real-time telemetry connection
   useSocket();
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
-      {isSidebarOpen && <Sidebar />}
+      <Sidebar />
       
-      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${isSidebarOpen ? 'ml-[280px]' : 'ml-0'}`}>
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${sidebarOffset}`}>
         <Topbar />
         
         <main className="flex-1 overflow-y-auto p-6">

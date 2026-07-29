@@ -61,12 +61,11 @@ const LoginPage = () => {
 
   return (
     <main className="min-h-screen bg-background text-on-surface grid lg:grid-cols-[minmax(0,1fr)_600px]">
-      <section className="hidden lg:flex min-h-screen bg-bg-secondary border-r border-border-subtle p-12 flex-col justify-center relative overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[linear-gradient(to_right,#e2e2e8_1px,transparent_1px),linear-gradient(to_bottom,#e2e2e8_1px,transparent_1px)] bg-[size:44px_44px]" />
-        
-        {/* Decorative background shapes */}
-        <div className="absolute top-0 right-0 -mr-32 -mt-32 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 -ml-32 -mb-32 w-[600px] h-[600px] bg-status-info/5 rounded-full blur-3xl pointer-events-none" />
+      <section 
+        className="hidden lg:flex min-h-screen bg-cover bg-center border-r border-border-subtle p-12 flex-col justify-center relative overflow-hidden"
+        style={{ backgroundImage: 'url("/login-bg.webp")' }}
+      >
+        <div className="absolute inset-0 bg-black/60 pointer-events-none" />
 
         <div className="relative z-10 flex flex-col gap-16 max-w-2xl mx-auto w-full">
           <div className="flex items-center gap-4">
@@ -74,13 +73,13 @@ const LoginPage = () => {
               <RadioTower className="w-7 h-7" />
             </div>
             <div>
-              <h1 className="text-3xl font-display font-bold text-on-surface tracking-tight">Djezzy SSOP</h1>
-              <p className="text-base text-on-surface-variant mt-0.5">Smart Site Operations Platform</p>
+              <h1 className="text-3xl font-display font-bold text-white tracking-tight">DDN</h1>
+              <p className="text-base text-white/80 mt-0.5">Djezzy Data Nexus</p>
             </div>
           </div>
 
           <div>
-            <h2 className="text-[3.5rem] font-display font-bold leading-[1.1] text-on-surface tracking-tight">
+            <h2 className="text-[3.5rem] font-display font-bold leading-[1.1] text-white tracking-tight">
               Site health, alarms, and digital operations in one console.
             </h2>
           </div>
@@ -94,8 +93,8 @@ const LoginPage = () => {
               <RadioTower className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl font-display font-bold text-on-surface">Djezzy SSOP</h1>
-              <p className="text-sm text-on-surface-variant">Smart Site Operations Platform</p>
+              <h1 className="text-xl font-display font-bold text-on-surface">DDN</h1>
+              <p className="text-sm text-on-surface-variant">Djezzy Data Nexus</p>
             </div>
           </div>
 

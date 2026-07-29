@@ -101,14 +101,6 @@ Latest maintenance
 Engineer activity
 ________________
 
-Executive Analytics
-Incident Trends
-Ticket Resolution
-Maintenance Compliance
-Site Availability
-Equipment Distribution
-________________
-
 AI Summary Card
 Example
 Three sites require immediate attention.
