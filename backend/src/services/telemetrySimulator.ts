@@ -97,6 +97,10 @@ let simulationCursor = Math.min(
   Math.max(0, Number(process.env.TELEMETRY_SIMULATION_START_INDEX || 0))
 );
 
+let simulationInterval: NodeJS.Timeout | null = null;
+let isRunning = false;
+let ioServer: Server | null = null;
+
 const numericValue = (row: SimulationRow, key: string, fallback = 0) => {
   const parsed = Number(row[key]);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -368,130 +372,167 @@ const applyAlarmTransitions = async (
   }
 };
 
+const runSimulationTick = async () => {
+  if (!ioServer) return;
+  try {
+    const row = simulationRows[simulationCursor];
+    simulationCursor = (simulationCursor + 1) % simulationRows.length;
+
+    const timestamp = new Date();
+    const equipments = await prisma.equipment.findMany({
+      include: { room: true }
+    }) as SimEquipment[];
+
+    const ups = findEquipment(equipments, 'eq-ups-a', 'UPS');
+    const ats = findEquipment(equipments, 'eq-ats-tgbt', 'ATS');
+    const battery = findEquipment(equipments, 'eq-battery-bank-a', 'Battery');
+    const switchCore = findEquipment(equipments, 'eq-switch-core', 'Network', 'switch');
+    const vsat = findEquipment(equipments, 'eq-vsat-rack', 'Network', 'vsat');
+    const enr = findEquipment(equipments, 'eq-rectifier-huawei', 'Rectifier');
+    const cooling = findEquipment(equipments, 'eq-clim-stulz-01', 'Cooling', 'stulz');
+
+    const inputVoltages = phases.map((phase) => numericValue(row, `DS3_Input_Voltage_${phase}`));
+    const outputVoltages = phases.map((phase) => numericValue(row, `DS3_Output_Voltage_${phase}`));
+    const outputLoads = phases.map((phase) => numericValue(row, `DS3_Output_Load_${phase}`));
+    const upsLoad = max(outputLoads);
+    const telemetryData: Array<{ equipmentId: string; metricType: string; value: number; timestamp: Date }> = [];
+    const telemetryUpdates: Array<{ equipment: SimEquipment; metrics: Record<string, number> }> = [];
+
+    const addTelemetry = (equipment: SimEquipment | undefined, metrics: Record<string, number | undefined>) => {
+      if (!equipment) return;
+
+      const numericMetrics = Object.fromEntries(
+        Object.entries(metrics).filter((entry): entry is [string, number] => typeof entry[1] === 'number' && Number.isFinite(entry[1]))
+      );
+
+      telemetryData.push(...Object.entries(numericMetrics).map(([metricType, value]) => ({
+        equipmentId: equipment.id,
+        metricType,
+        value,
+        timestamp
+      })));
+      telemetryUpdates.push({ equipment, metrics: numericMetrics });
+    };
+
+    addTelemetry(ups, {
+      temperature: numericValue(row, 'DS3_UPS_Temp'),
+      humidity: ups?.room?.targetHumidity,
+      load: upsLoad,
+      powerDraw: roundMetric(upsLoad * 2.25),
+      inputVoltageL1: inputVoltages[0],
+      inputVoltageL2: inputVoltages[1],
+      inputVoltageL3: inputVoltages[2],
+      outputVoltageL1: outputVoltages[0],
+      outputVoltageL2: outputVoltages[1],
+      outputVoltageL3: outputVoltages[2],
+      outputLoadL1: outputLoads[0],
+      outputLoadL2: outputLoads[1],
+      outputLoadL3: outputLoads[2],
+      phaseUnbalance: roundMetric(max(outputLoads) - min(outputLoads)),
+      batteryCapacity: numericValue(row, 'DS3_Battery_Capacity')
+    });
+    addTelemetry(ats, {
+      load: upsLoad,
+      powerDraw: roundMetric(upsLoad * 1.1),
+      inputVoltageL1: inputVoltages[0],
+      inputVoltageL2: inputVoltages[1],
+      inputVoltageL3: inputVoltages[2],
+      humidity: ats?.room?.targetHumidity
+    });
+    addTelemetry(battery, {
+      temperature: numericValue(row, 'DS2_BAT MSC10'),
+      humidity: battery?.room?.targetHumidity,
+      batteryCapacity: numericValue(row, 'DS3_Battery_Capacity')
+    });
+    addTelemetry(switchCore, {
+      temperature: numericValue(row, 'DS2_SWITCH MSC10'),
+      humidity: switchCore?.room?.targetHumidity
+    });
+    addTelemetry(enr, {
+      temperature: numericValue(row, 'DS2_ENR MSC 10'),
+      humidity: enr?.room?.targetHumidity
+    });
+    addTelemetry(vsat, {
+      temperature: numericValue(row, 'DS2_V-SAT MSC10'),
+      humidity: vsat?.room?.targetHumidity
+    });
+    addTelemetry(cooling, {
+      temperature: numericValue(row, 'DS2_SWITCH MSC10'),
+      humidity: cooling?.room?.targetHumidity
+    });
+
+    if (telemetryData.length > 0) {
+      await prisma.telemetry.createMany({ data: telemetryData });
+    }
+
+    for (const update of telemetryUpdates) {
+      ioServer.emit('telemetry_update', {
+        equipmentId: update.equipment.id,
+        equipmentName: update.equipment.name,
+        siteId: update.equipment.room?.siteId,
+        simulationTime: row.Sim_Datetime,
+        metrics: {
+          ...update.metrics,
+          status: update.equipment.status
+        },
+        timestamp
+      });
+    }
+
+    const transitions = alarmTransitionsFromRow(row, {
+      ups,
+      ats,
+      cooling,
+      battery,
+      generator: findEquipment(equipments, 'eq-generator-01', 'Generator'),
+      switchCore,
+      electrical: enr || ats
+    });
+    await applyAlarmTransitions(transitions, timestamp, ioServer);
+  } catch (error) {
+    console.error('Telemetry Simulation Error:', error);
+  }
+};
+
 export const startTelemetrySimulation = (io: Server) => {
   if (simulationRows.length === 0) {
     console.warn('Telemetry simulation disabled because no simulation rows were loaded.');
     return;
   }
 
-  setInterval(async () => {
-    try {
-      const row = simulationRows[simulationCursor];
-      simulationCursor = (simulationCursor + 1) % simulationRows.length;
+  ioServer = io;
+  if (!isRunning) {
+    isRunning = true;
+    simulationInterval = setInterval(runSimulationTick, SIMULATION_INTERVAL_MS);
+  }
+};
 
-      const timestamp = new Date();
-      const equipments = await prisma.equipment.findMany({
-        include: { room: true }
-      }) as SimEquipment[];
+export const pauseTelemetrySimulation = () => {
+  if (simulationInterval) {
+    clearInterval(simulationInterval);
+    simulationInterval = null;
+  }
+  isRunning = false;
+};
 
-      const ups = findEquipment(equipments, 'eq-ups-a', 'UPS');
-      const ats = findEquipment(equipments, 'eq-ats-tgbt', 'ATS');
-      const battery = findEquipment(equipments, 'eq-battery-bank-a', 'Battery');
-      const switchCore = findEquipment(equipments, 'eq-switch-core', 'Network', 'switch');
-      const vsat = findEquipment(equipments, 'eq-vsat-rack', 'Network', 'vsat');
-      const enr = findEquipment(equipments, 'eq-rectifier-huawei', 'Rectifier');
-      const cooling = findEquipment(equipments, 'eq-clim-stulz-01', 'Cooling', 'stulz');
+export const resumeTelemetrySimulation = () => {
+  if (simulationRows.length === 0 || !ioServer || isRunning) return;
+  isRunning = true;
+  simulationInterval = setInterval(runSimulationTick, SIMULATION_INTERVAL_MS);
+};
 
-      const inputVoltages = phases.map((phase) => numericValue(row, `DS3_Input_Voltage_${phase}`));
-      const outputVoltages = phases.map((phase) => numericValue(row, `DS3_Output_Voltage_${phase}`));
-      const outputLoads = phases.map((phase) => numericValue(row, `DS3_Output_Load_${phase}`));
-      const upsLoad = max(outputLoads);
-      const telemetryData: Array<{ equipmentId: string; metricType: string; value: number; timestamp: Date }> = [];
-      const telemetryUpdates: Array<{ equipment: SimEquipment; metrics: Record<string, number> }> = [];
+export const resetTelemetrySimulation = () => {
+  pauseTelemetrySimulation();
+  simulationCursor = Math.min(
+    simulationRows.length > 0 ? simulationRows.length - 1 : 0,
+    Math.max(0, Number(process.env.TELEMETRY_SIMULATION_START_INDEX || 0))
+  );
+};
 
-      const addTelemetry = (equipment: SimEquipment | undefined, metrics: Record<string, number | undefined>) => {
-        if (!equipment) return;
-
-        const numericMetrics = Object.fromEntries(
-          Object.entries(metrics).filter((entry): entry is [string, number] => typeof entry[1] === 'number' && Number.isFinite(entry[1]))
-        );
-
-        telemetryData.push(...Object.entries(numericMetrics).map(([metricType, value]) => ({
-          equipmentId: equipment.id,
-          metricType,
-          value,
-          timestamp
-        })));
-        telemetryUpdates.push({ equipment, metrics: numericMetrics });
-      };
-
-      addTelemetry(ups, {
-        temperature: numericValue(row, 'DS3_UPS_Temp'),
-        humidity: ups?.room?.targetHumidity,
-        load: upsLoad,
-        powerDraw: roundMetric(upsLoad * 2.25),
-        inputVoltageL1: inputVoltages[0],
-        inputVoltageL2: inputVoltages[1],
-        inputVoltageL3: inputVoltages[2],
-        outputVoltageL1: outputVoltages[0],
-        outputVoltageL2: outputVoltages[1],
-        outputVoltageL3: outputVoltages[2],
-        outputLoadL1: outputLoads[0],
-        outputLoadL2: outputLoads[1],
-        outputLoadL3: outputLoads[2],
-        phaseUnbalance: roundMetric(max(outputLoads) - min(outputLoads)),
-        batteryCapacity: numericValue(row, 'DS3_Battery_Capacity')
-      });
-      addTelemetry(ats, {
-        load: upsLoad,
-        powerDraw: roundMetric(upsLoad * 1.1),
-        inputVoltageL1: inputVoltages[0],
-        inputVoltageL2: inputVoltages[1],
-        inputVoltageL3: inputVoltages[2],
-        humidity: ats?.room?.targetHumidity
-      });
-      addTelemetry(battery, {
-        temperature: numericValue(row, 'DS2_BAT MSC10'),
-        humidity: battery?.room?.targetHumidity,
-        batteryCapacity: numericValue(row, 'DS3_Battery_Capacity')
-      });
-      addTelemetry(switchCore, {
-        temperature: numericValue(row, 'DS2_SWITCH MSC10'),
-        humidity: switchCore?.room?.targetHumidity
-      });
-      addTelemetry(enr, {
-        temperature: numericValue(row, 'DS2_ENR MSC 10'),
-        humidity: enr?.room?.targetHumidity
-      });
-      addTelemetry(vsat, {
-        temperature: numericValue(row, 'DS2_V-SAT MSC10'),
-        humidity: vsat?.room?.targetHumidity
-      });
-      addTelemetry(cooling, {
-        temperature: numericValue(row, 'DS2_SWITCH MSC10'),
-        humidity: cooling?.room?.targetHumidity
-      });
-
-      if (telemetryData.length > 0) {
-        await prisma.telemetry.createMany({ data: telemetryData });
-      }
-
-      for (const update of telemetryUpdates) {
-        io.emit('telemetry_update', {
-          equipmentId: update.equipment.id,
-          equipmentName: update.equipment.name,
-          siteId: update.equipment.room?.siteId,
-          simulationTime: row.Sim_Datetime,
-          metrics: {
-            ...update.metrics,
-            status: update.equipment.status
-          },
-          timestamp
-        });
-      }
-
-      const transitions = alarmTransitionsFromRow(row, {
-        ups,
-        ats,
-        cooling,
-        battery,
-        generator: findEquipment(equipments, 'eq-generator-01', 'Generator'),
-        switchCore,
-        electrical: enr || ats
-      });
-      await applyAlarmTransitions(transitions, timestamp, io);
-    } catch (error) {
-      console.error('Telemetry Simulation Error:', error);
-    }
-  }, SIMULATION_INTERVAL_MS);
+export const getTelemetrySimulationStatus = () => {
+  return {
+    isRunning,
+    cursor: simulationCursor,
+    totalRows: simulationRows.length
+  };
 };
