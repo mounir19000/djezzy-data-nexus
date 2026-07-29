@@ -26,7 +26,7 @@ const desiredEquipmentIds = [
 ];
 
 async function main() {
-  console.log('Starting Djezzy SSOP seed...');
+  console.log('Starting DDN seed...');
 
   const superAdminRole = await prisma.role.upsert({
     where: { name: 'Super Admin' },

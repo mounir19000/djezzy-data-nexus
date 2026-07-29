@@ -16,7 +16,7 @@ ________________
 
 PRODUCT
 Design a platform called
-Djezzy Smart Site Operations Platform (SSOP)
+Djezzy Data Nexus (DDN)
 This is an intelligent operational platform that combines
 * SCADA Monitoring
 * Rule-Based Expert System
@@ -54,7 +54,6 @@ Provides
 * Site Comparison
 * User Management
 * Reports
-* Analytics
 * Maintenance Statistics
 No Digital Twin is available except for the pilot site.
 ________________
@@ -81,7 +80,6 @@ National dashboards
 Users
 Permissions
 Reports
-Analytics
 Maintenance
 Knowledge Base
 Configuration

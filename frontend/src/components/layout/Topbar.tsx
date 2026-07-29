@@ -74,10 +74,6 @@ const Topbar = () => {
     }
 
     const headers: Record<string, { title: string; subtitle: string }> = {
-      '/analytics': {
-        title: 'Executive Analytics',
-        subtitle: 'Network-wide performance and incident trends.'
-      },
       '/incidents': {
         title: 'Incident Diagnosis Center',
         subtitle: 'Live alarms, rule-based diagnosis, and ticket escalation.'
@@ -109,8 +105,8 @@ const Topbar = () => {
     };
 
     return headers[pathname] || {
-      title: 'Djezzy SSOP',
-      subtitle: 'Operational monitoring platform.'
+      title: 'DDN',
+      subtitle: 'Djezzy Data Nexus operations platform.'
     };
   }, [location.pathname, sites]);
 

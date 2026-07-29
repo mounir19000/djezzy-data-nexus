@@ -1,5 +1,5 @@
 PRODUCT VISION
-Design a modern enterprise-grade web platform called Djezzy Smart Site Operations Platform (SSOP).
+Design a modern enterprise-grade web platform called Djezzy Data Nexus (DDN).
 The platform is an intelligent decision-support system designed to help Djezzy monitor, diagnose, manage, and maintain its telecom infrastructure.
 Unlike traditional SCADA systems that only display alarms, this platform transforms raw SCADA events into actionable operational intelligence through:
 * Rule-Based Expert System

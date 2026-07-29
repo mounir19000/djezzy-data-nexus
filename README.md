@@ -1,11 +1,11 @@
-# Djezzy Smart Site Operations Platform (SSOP) - Agent Guide
+# Djezzy Data Nexus (DDN) - Agent Guide
 
-Welcome, AI Agent! This document is designed to give you a comprehensive understanding of the Djezzy SSOP project. Read this file to grasp the core functionality, user roles, design philosophy, and what needs to be built.
+Welcome, AI Agent! This document is designed to give you a comprehensive understanding of the Djezzy Data Nexus (DDN) project. Read this file to grasp the core functionality, user roles, design philosophy, and what needs to be built.
 
 ## 1. Product Vision
-Djezzy SSOP is an enterprise-grade, intelligent decision-support system meant to help Djezzy monitor, diagnose, manage, and maintain its telecom infrastructure. 
+DDN is an enterprise-grade, intelligent decision-support system meant to help Djezzy monitor, diagnose, manage, and maintain its telecom infrastructure.
 
-Unlike traditional SCADA (Supervisory Control and Data Acquisition) systems that simply show raw data and alarms, SSOP provides **operational intelligence**. It answers not just "What happened?" but also "Why did it happen?", "How critical is it?", and "What should I do now?".
+Unlike traditional SCADA (Supervisory Control and Data Acquisition) systems that simply show raw data and alarms, DDN provides **operational intelligence**. It answers not just "What happened?" but also "Why did it happen?", "How critical is it?", and "What should I do now?".
 
 **The MVP (Minimum Viable Product) focuses on a pilot site: MSC10 Blida.**
 
@@ -54,4 +54,4 @@ When building or expanding this application, your tasks will generally involve:
 3.  **Implementing the Logic:** Connecting the SCADA data simulation to the Health Score calculation logic and Rule-Based Expert System.
 4.  **Enforcing the Workflow:** Ensuring the UI logically guides the user from Alarm -> Diagnosis -> Ticket -> Resolution.
 
-*Always refer back to this guide to ensure your implementation aligns with the enterprise, mission-critical nature of the Djezzy SSOP.*
+*Always refer back to this guide to ensure your implementation aligns with the enterprise, mission-critical nature of Djezzy Data Nexus.*
