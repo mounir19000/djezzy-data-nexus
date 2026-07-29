@@ -27,7 +27,7 @@ router.get('/', requireAuth, async (req, res: Response) => {
       siteIds: user.siteAssignments.map((assignment: any) => assignment.siteId)
     })));
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch users' });
+    res.status(500).json({ error: 'Échec du chargement des utilisateurs' });
   }
 });
 

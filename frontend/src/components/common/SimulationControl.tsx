@@ -68,12 +68,12 @@ const SimulationControl = () => {
             <button 
               onClick={() => setIsCollapsed(!isCollapsed)}
               className="p-1 hover:bg-bg-surface rounded text-on-surface-variant hover:text-on-surface transition-colors -ml-1"
-              title={isCollapsed ? "Expand" : "Collapse"}
+              title={isCollapsed ? "Developper" : "Reduire"}
             >
               {isCollapsed ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             </button>
             <span className="text-xs font-mono text-on-surface-variant uppercase tracking-wider font-semibold">
-              Telemetry Sim
+              Simulation télémétrie
             </span>
           </div>
           <span className={`w-2 h-2 rounded-full ${status.isRunning ? 'bg-status-success animate-pulse' : 'bg-status-warning'}`}></span>
@@ -98,7 +98,7 @@ const SimulationControl = () => {
               <button
                 onClick={() => handleAction('reset')}
                 className="p-2 rounded-lg bg-bg-secondary text-on-surface hover:bg-bg-surface hover:text-primary transition-colors border border-transparent hover:border-border-subtle"
-                title="Reset Simulation"
+                title="Reinitialiser la simulation"
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
@@ -117,7 +117,7 @@ const SimulationControl = () => {
                   className="p-2 px-4 rounded-lg bg-status-success/10 text-status-success hover:bg-status-success/20 transition-colors flex items-center gap-2 border border-status-success/20"
                 >
                   <Play className="w-4 h-4" />
-                  <span className="text-sm font-medium">Play</span>
+                  <span className="text-sm font-medium">Lecture</span>
                 </button>
               )}
             </div>

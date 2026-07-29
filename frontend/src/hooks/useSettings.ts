@@ -9,7 +9,7 @@ const fetchRules = async (siteId?: string) => {
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` }
   });
-  if (!res.ok) throw new Error('Failed to fetch expert rules');
+  if (!res.ok) throw new Error('Échec du chargement des règles expertes');
   return res.json();
 };
 
@@ -33,7 +33,7 @@ export const useUpdateRule = () => {
         },
         body: JSON.stringify({ threshold })
       });
-      if (!res.ok) throw new Error('Failed to update rule');
+      if (!res.ok) throw new Error('Échec de la mise à jour de la règle');
       return res.json();
     },
     onSuccess: () => {

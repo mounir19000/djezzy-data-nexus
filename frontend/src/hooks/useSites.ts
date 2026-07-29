@@ -6,7 +6,7 @@ const fetchSites = async () => {
   const res = await fetch(`${API_BASE_URL}/api/sites`, {
     headers: { Authorization: `Bearer ${token}` }
   });
-  if (!res.ok) throw new Error('Failed to fetch sites');
+  if (!res.ok) throw new Error('Échec du chargement des sites');
   return res.json();
 };
 
@@ -22,7 +22,7 @@ const fetchSite = async (siteId: string) => {
   const res = await fetch(`${API_BASE_URL}/api/sites/${siteId}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
-  if (!res.ok) throw new Error('Failed to fetch site');
+  if (!res.ok) throw new Error('Échec du chargement du site');
   return res.json();
 };
 
@@ -39,7 +39,7 @@ const fetchSiteDashboard = async (siteId: string) => {
   const res = await fetch(`${API_BASE_URL}/api/sites/${siteId}/dashboard`, {
     headers: { Authorization: `Bearer ${token}` }
   });
-  if (!res.ok) throw new Error('Failed to fetch site dashboard');
+  if (!res.ok) throw new Error('Échec du chargement du tableau de bord site');
   return res.json();
 };
 

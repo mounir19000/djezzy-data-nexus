@@ -6,7 +6,7 @@ const fetchKnowledge = async () => {
   const res = await fetch(`${API_BASE_URL}/api/knowledge`, {
     headers: { Authorization: `Bearer ${token}` }
   });
-  if (!res.ok) throw new Error('Failed to fetch KB articles');
+  if (!res.ok) throw new Error('Échec du chargement des articles de connaissance');
   return res.json();
 };
 
@@ -35,7 +35,7 @@ export const useCreateKnowledgeArticle = () => {
         },
         body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error('Failed to create knowledge article');
+      if (!res.ok) throw new Error('Échec de la création de l’article de connaissance');
       return res.json();
     },
     onSuccess: () => {

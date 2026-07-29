@@ -6,7 +6,7 @@ const fetchUsers = async () => {
   const res = await fetch(`${API_BASE_URL}/api/users`, {
     headers: { Authorization: `Bearer ${token}` }
   });
-  if (!res.ok) throw new Error('Failed to fetch users');
+  if (!res.ok) throw new Error('Échec du chargement des utilisateurs');
   return res.json();
 };
 

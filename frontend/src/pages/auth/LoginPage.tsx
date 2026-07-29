@@ -47,7 +47,7 @@ const LoginPage = () => {
       const json = await response.json();
 
       if (!response.ok) {
-        throw new Error(json.error?.message || 'Login failed');
+        throw new Error(json.error?.message || 'Connexion echouee');
       }
 
       login(json.data.token, json.data.user);
@@ -80,7 +80,7 @@ const LoginPage = () => {
 
           <div>
             <h2 className="text-[3.5rem] font-display font-bold leading-[1.1] text-white tracking-tight">
-              Site health, alarms, and digital operations in one console.
+              Santé des sites, alarmes et opérations numériques dans une seule console.
             </h2>
           </div>
         </div>
@@ -101,9 +101,9 @@ const LoginPage = () => {
           <div className="bg-bg-surface border border-border-subtle rounded-2xl p-10 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm text-primary font-mono">Secure Access</p>
-                <h2 className="text-3xl font-display font-bold text-on-surface mt-2">Sign In</h2>
-                <p className="text-sm text-on-surface-variant mt-2">Use your operations account to continue.</p>
+                <p className="text-sm text-primary font-mono">Accès sécurisé</p>
+                <h2 className="text-3xl font-display font-bold text-on-surface mt-2">Connexion</h2>
+                <p className="text-sm text-on-surface-variant mt-2">Utilisez votre compte opérations pour continuer.</p>
               </div>
               <div className="w-12 h-12 rounded-xl bg-bg-secondary border border-border-subtle grid place-items-center">
                 <Zap className="w-6 h-6 text-primary" />
@@ -139,7 +139,7 @@ const LoginPage = () => {
 
               <div>
                 <label className="block text-sm font-medium text-on-surface-variant mb-2" htmlFor="password">
-                  Password
+                  Mot de passe
                 </label>
                 <div className="relative">
                   <LockKeyhole className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
@@ -149,13 +149,13 @@ const LoginPage = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full h-12 bg-background border border-border-subtle rounded-md pl-11 pr-12 text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
-                    placeholder="Password"
+                    placeholder="Mot de passe"
                     autoComplete="current-password"
                     required
                   />
                   <button
                     type="button"
-                    aria-label={passwordVisible ? 'Hide password' : 'Show password'}
+                    aria-label={passwordVisible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
                     onClick={() => setPasswordVisible(!passwordVisible)}
                     className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-md text-on-surface-variant hover:text-primary hover:bg-bg-surface transition-colors grid place-items-center"
                   >
@@ -172,11 +172,11 @@ const LoginPage = () => {
                 {loading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Signing in
+                    Connexion
                   </>
                 ) : (
                   <>
-                    Continue
+                    Continuer
                     <ArrowRight className="w-5 h-5" />
                   </>
                 )}

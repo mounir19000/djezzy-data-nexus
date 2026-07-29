@@ -14,7 +14,7 @@ export interface AuthRequest extends Request {
 export const requireAuth = (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: { message: 'Unauthorized: No token provided' } });
+    return res.status(401).json({ error: { message: 'Non autorisé : aucun token fourni' } });
   }
 
   const token = authHeader.split(' ')[1];
@@ -24,14 +24,14 @@ export const requireAuth = (req: AuthRequest, res: Response, next: NextFunction)
     req.user = decoded;
     next();
   } catch (error) {
-    return res.status(401).json({ error: { message: 'Unauthorized: Invalid token' } });
+    return res.status(401).json({ error: { message: 'Non autorisé : token invalide' } });
   }
 };
 
 export const requireRole = (allowedRoles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.status(401).json({ error: { message: 'Unauthorized' } });
+      return res.status(401).json({ error: { message: 'Non autorisé' } });
     }
 
     if (req.user.roleName === 'Super Admin') {
@@ -39,7 +39,7 @@ export const requireRole = (allowedRoles: string[]) => {
     }
 
     if (!allowedRoles.includes(req.user.roleName)) {
-      return res.status(403).json({ error: { message: 'Forbidden: Insufficient role permissions' } });
+      return res.status(403).json({ error: { message: 'Accès refusé : permissions insuffisantes' } });
     }
 
     next();

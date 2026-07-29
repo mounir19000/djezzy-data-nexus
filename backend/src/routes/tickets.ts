@@ -52,7 +52,7 @@ router.get('/', requireAuth, async (req: any, res: Response) => {
 
     res.json(tickets.map(mapTicketWithDiagnosis));
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch tickets' });
+    res.status(500).json({ error: 'Échec du chargement des tickets' });
   }
 });
 
@@ -81,13 +81,13 @@ router.post('/', requireAuth, requireRole(['Site Operator', 'Engineer']), async 
     }) : null);
 
     if (!equipment) {
-      return res.status(400).json({ error: 'equipmentId or alarmId is required' });
+      return res.status(400).json({ error: 'equipmentId ou alarmId est requis' });
     }
 
     const siteId = equipment.room.site.id;
     const canAccess = await userCanAccessSite(authReq.user, siteId);
     if (!canAccess) {
-      return res.status(403).json({ error: 'Forbidden: ticket is outside your assigned site scope' });
+      return res.status(403).json({ error: 'Accès refusé : le ticket est hors du périmètre de vos sites assignés' });
     }
 
     if (alarmId) {
@@ -101,7 +101,7 @@ router.post('/', requireAuth, requireRole(['Site Operator', 'Engineer']), async 
 
       if (existingTicket) {
         return res.status(409).json({
-          error: 'An open ticket already exists for this alarm',
+          error: 'Un ticket ouvert existe déjà pour cette alarme',
           ticket: mapTicketWithDiagnosis(existingTicket)
         });
       }
@@ -120,7 +120,7 @@ router.post('/', requireAuth, requireRole(['Site Operator', 'Engineer']), async 
       data: {
         alarmId: alarm?.id,
         equipmentId: equipment.id,
-        title: title?.trim() || `Respond to ${alarm?.description || 'operational event'}`,
+        title: title?.trim() || `Intervenir sur ${alarm?.description || 'événement opérationnel'}`,
         status: resolvedAssignee ? 'assigned' : 'pending',
         priority: ticketPriority,
         source: alarm ? 'alarm_manual' : 'manual',
@@ -135,7 +135,7 @@ router.post('/', requireAuth, requireRole(['Site Operator', 'Engineer']), async 
         data: {
           userId: resolvedAssignee,
           siteId,
-          message: `Ticket ${ticket.id.substring(0, 8)} assigned: ${ticket.title}`
+          message: `Ticket ${ticket.id.substring(0, 8)} assigné : ${ticket.title}`
         }
       });
     }
@@ -144,14 +144,14 @@ router.post('/', requireAuth, requireRole(['Site Operator', 'Engineer']), async 
       data: {
         userId: authReq.user!.id,
         siteId,
-        message: `Ticket ${ticket.id.substring(0, 8)} launched for ${equipment.name}.`
+        message: `Ticket ${ticket.id.substring(0, 8)} lancé pour ${equipment.name}.`
       }
     });
 
     res.status(201).json(mapTicketWithDiagnosis(ticket));
   } catch (error) {
     console.error('Create ticket error:', error);
-    res.status(500).json({ error: 'Failed to create ticket' });
+    res.status(500).json({ error: 'Échec de la création du ticket' });
   }
 });
 
@@ -160,11 +160,11 @@ router.put('/:id/status', requireAuth, async (req: any, res: Response) => {
   const authReq = req as AuthRequest;
   const { status, assignedTo } = req.body;
 
-  if (!status) return res.status(400).json({ error: 'Status is required' });
+  if (!status) return res.status(400).json({ error: 'Le statut est requis' });
 
   try {
     const ticket = await findAccessibleTicket(req.params.id, authReq.user);
-    if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+    if (!ticket) return res.status(404).json({ error: 'Ticket introuvable' });
 
     const siteId = siteIdForTicket(ticket);
     const nextAssigneeId = Object.prototype.hasOwnProperty.call(req.body, 'assignedTo')
@@ -175,7 +175,7 @@ router.put('/:id/status', requireAuth, async (req: any, res: Response) => {
 
     if (authReq.user?.roleName === 'Engineer') {
       if (finalAssigneeId && finalAssigneeId !== authReq.user.id) {
-        return res.status(403).json({ error: 'Engineers can only assign tickets to themselves' });
+        return res.status(403).json({ error: 'Les ingénieurs ne peuvent assigner les tickets qu’à eux-mêmes' });
       }
     }
 
@@ -205,7 +205,7 @@ router.put('/:id/status', requireAuth, async (req: any, res: Response) => {
         data: {
           userId: finalAssigneeId,
           siteId: siteIdForTicket(updatedTicket),
-          message: `Ticket ${updatedTicket.id.substring(0, 8)} assigned: ${updatedTicket.title}`
+          message: `Ticket ${updatedTicket.id.substring(0, 8)} assigné : ${updatedTicket.title}`
         }
       });
       const io = req.app.get('io');
@@ -231,7 +231,7 @@ router.put('/:id/status', requireAuth, async (req: any, res: Response) => {
           data: {
             userId: admin.id,
             siteId: siteIdForTicket(updatedTicket),
-            message: `Ticket ${updatedTicket.id.substring(0, 8)} (${updatedTicket.title}) has been closed.`
+            message: `Ticket ${updatedTicket.id.substring(0, 8)} (${updatedTicket.title}) a été clôturé.`
           }
         });
       }
@@ -245,7 +245,7 @@ router.put('/:id/status', requireAuth, async (req: any, res: Response) => {
     res.json(mapTicketWithDiagnosis(updatedTicket));
   } catch (error) {
     console.error('Update ticket status error:', error);
-    res.status(500).json({ error: 'Failed to update ticket status' });
+    res.status(500).json({ error: 'Échec de la mise à jour du statut du ticket' });
   }
 });
 
@@ -255,7 +255,7 @@ router.delete('/:id', requireAuth, requireRole(['Site Operator']), async (req: a
 
   try {
     const ticket = await findAccessibleTicket(req.params.id, authReq.user);
-    if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+    if (!ticket) return res.status(404).json({ error: 'Ticket introuvable' });
 
     await prisma.ticket.delete({
       where: { id: ticket.id }
@@ -269,7 +269,7 @@ router.delete('/:id', requireAuth, requireRole(['Site Operator']), async (req: a
     res.status(204).send();
   } catch (error) {
     console.error('Delete ticket error:', error);
-    res.status(500).json({ error: 'Failed to delete ticket' });
+    res.status(500).json({ error: 'Échec de la suppression du ticket' });
   }
 });
 
@@ -279,10 +279,10 @@ router.post('/:id/report', requireAuth, requireRole(['Engineer']), async (req: a
 
   try {
     const ticket = await findAccessibleTicket(req.params.id, authReq.user);
-    if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+    if (!ticket) return res.status(404).json({ error: 'Ticket introuvable' });
 
     if (authReq.user?.roleName === 'Engineer' && ticket.assignedTo !== authReq.user.id) {
-      return res.status(403).json({ error: 'Only the assigned engineer can submit this ticket report' });
+      return res.status(403).json({ error: 'Seul l’ingénieur assigné peut soumettre ce rapport de ticket' });
     }
 
     const missingField = reportFields.find((field) => {
@@ -291,7 +291,7 @@ router.post('/:id/report', requireAuth, requireRole(['Engineer']), async (req: a
     });
 
     if (missingField) {
-      return res.status(400).json({ error: `Missing report field: ${missingField}` });
+      return res.status(400).json({ error: `Champ de rapport manquant : ${missingField}` });
     }
 
     await prisma.ticketReport.upsert({
@@ -327,7 +327,7 @@ router.post('/:id/report', requireAuth, requireRole(['Engineer']), async (req: a
     res.json(mapTicketWithDiagnosis(updatedTicket));
   } catch (error) {
     console.error('Submit ticket report error:', error);
-    res.status(500).json({ error: 'Failed to submit ticket report' });
+    res.status(500).json({ error: 'Échec de la soumission du rapport de ticket' });
   }
 });
 

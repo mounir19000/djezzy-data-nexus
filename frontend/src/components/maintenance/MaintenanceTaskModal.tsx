@@ -5,6 +5,7 @@ import Badge from '../ui/Badge';
 import { API_BASE_URL } from '../../lib/api';
 import { useAppStore } from '../../store/useAppStore';
 import { useDeleteMaintenanceTask } from '../../hooks/useMaintenance';
+import { displayStatus, displayText, formatDate, formatDateTime, reportOptions } from '../../lib/frenchLabels';
 
 interface MaintenanceTaskModalProps {
   task: any;
@@ -37,7 +38,7 @@ const MaintenanceTaskModal: React.FC<MaintenanceTaskModalProps> = ({ task, onClo
         },
         body: JSON.stringify(data)
       });
-      if (!res.ok) throw new Error('Failed to submit report');
+      if (!res.ok) throw new Error('Échec de la soumission du rapport');
       return res.json();
     },
     onSuccess: () => {
@@ -78,32 +79,32 @@ const MaintenanceTaskModal: React.FC<MaintenanceTaskModalProps> = ({ task, onClo
           </button>
         </div>
 
-        {/* Details Body */}
+        {/* Détails */}
         <div className="p-6 space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-background rounded-lg p-3 border border-border-subtle">
-              <span className="text-xs text-on-surface-variant font-mono uppercase block mb-1">Equipment</span>
+              <span className="text-xs text-on-surface-variant font-mono uppercase block mb-1">Équipement</span>
               <div className="font-medium text-on-surface text-sm">
-                {task.equipment?.name} ({task.equipment?.type})
+                {task.equipment?.name} ({displayText(task.equipment?.type)})
                 <div className="text-xs text-on-surface-variant font-normal mt-0.5">
-                  {task.equipment?.room?.site?.name} • {task.equipment?.room?.name}
+                  {displayText(task.equipment?.room?.site?.name)} • {displayText(task.equipment?.room?.name)}
                 </div>
               </div>
             </div>
             
             <div className="bg-background rounded-lg p-3 border border-border-subtle">
-              <span className="text-xs text-on-surface-variant font-mono uppercase block mb-1">Status</span>
+              <span className="text-xs text-on-surface-variant font-mono uppercase block mb-1">Statut</span>
               <Badge status={task.status === 'completed' ? 'healthy' : task.status === 'inProgress' ? 'warning' : 'offline'}>
-                {task.status.toUpperCase()}
+                {displayStatus(task.status, true)}
               </Badge>
             </div>
             
             <div className="bg-background rounded-lg p-3 border border-border-subtle flex items-center gap-3">
               <Calendar className="w-8 h-8 text-on-surface-variant opacity-50" />
               <div>
-                <span className="text-xs text-on-surface-variant font-mono uppercase block mb-0.5">Scheduled For</span>
+                <span className="text-xs text-on-surface-variant font-mono uppercase block mb-0.5">Planifie pour</span>
                 <span className="font-medium text-on-surface text-sm">
-                  {new Date(task.scheduledDate).toLocaleDateString()}
+                  {formatDate(task.scheduledDate)}
                 </span>
               </div>
             </div>
@@ -111,9 +112,9 @@ const MaintenanceTaskModal: React.FC<MaintenanceTaskModalProps> = ({ task, onClo
             <div className="bg-background rounded-lg p-3 border border-border-subtle flex items-center gap-3">
               <User className="w-8 h-8 text-on-surface-variant opacity-50" />
               <div>
-                <span className="text-xs text-on-surface-variant font-mono uppercase block mb-0.5">Assigned To</span>
+                <span className="text-xs text-on-surface-variant font-mono uppercase block mb-0.5">Assigné a</span>
                 <span className="font-medium text-on-surface text-sm">
-                  {task.assignee ? `${task.assignee.firstName} ${task.assignee.lastName}` : 'Unassigned'}
+                  {task.assignee ? `${task.assignee.firstName} ${task.assignee.lastName}` : 'Non assigné'}
                 </span>
               </div>
             </div>
@@ -124,23 +125,23 @@ const MaintenanceTaskModal: React.FC<MaintenanceTaskModalProps> = ({ task, onClo
             <div className="mt-6 border border-status-healthy/30 bg-status-healthy/5 rounded-lg overflow-hidden">
               <div className="bg-status-healthy/10 px-4 py-2 border-b border-status-healthy/30 flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-status-healthy" />
-                <span className="font-medium text-status-healthy text-sm">Maintenance Report</span>
+                <span className="font-medium text-status-healthy text-sm">Rapport de maintenance</span>
               </div>
               <div className="p-4 space-y-4 text-sm">
                 <div>
-                  <span className="block text-xs font-mono text-on-surface-variant uppercase mb-1">Action Taken</span>
+                  <span className="block text-xs font-mono text-on-surface-variant uppercase mb-1">Action effectuée</span>
                   <p className="text-on-surface whitespace-pre-wrap">{task.report.actionTaken}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <span className="block text-xs font-mono text-on-surface-variant uppercase mb-1">Current State</span>
+                    <span className="block text-xs font-mono text-on-surface-variant uppercase mb-1">État actuel</span>
                     <Badge status={task.report.currentState === 'Healthy' ? 'healthy' : 'warning'}>
-                      {task.report.currentState}
+                      {reportOptions.maintenanceStates.find((option) => option.value === task.report.currentState)?.label || task.report.currentState}
                     </Badge>
                   </div>
                   <div>
-                    <span className="block text-xs font-mono text-on-surface-variant uppercase mb-1">Submitted</span>
-                    <span className="text-on-surface">{new Date(task.report.createdAt).toLocaleString()}</span>
+                    <span className="block text-xs font-mono text-on-surface-variant uppercase mb-1">Soumis</span>
+                    <span className="text-on-surface">{formatDateTime(task.report.createdAt)}</span>
                   </div>
                 </div>
                 {task.report.notes && (
@@ -157,42 +158,40 @@ const MaintenanceTaskModal: React.FC<MaintenanceTaskModalProps> = ({ task, onClo
           {isReporting && (
             <form onSubmit={handleSubmit} className="mt-6 border-t border-border-subtle pt-6 space-y-4">
               <h4 className="font-medium text-on-surface flex items-center gap-2 mb-4">
-                <FileText className="w-4 h-4 text-primary" /> Complete Maintenance Task
+                <FileText className="w-4 h-4 text-primary" /> Terminer la tâche de maintenance
               </h4>
               
               <div>
-                <label className="block text-sm font-medium text-on-surface mb-1">Action Taken *</label>
+                <label className="block text-sm font-medium text-on-surface mb-1">Action effectuée *</label>
                 <textarea
                   required
                   rows={3}
                   value={actionTaken}
                   onChange={(e) => setActionTaken(e.target.value)}
                   className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-primary"
-                  placeholder="Describe what maintenance was performed..."
+                  placeholder="Décrivez la maintenance realisee..."
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-on-surface mb-1">Current State of Equipment *</label>
+                <label className="block text-sm font-medium text-on-surface mb-1">État actuel de l’équipement *</label>
                 <select
                   value={currentState}
                   onChange={(e) => setCurrentState(e.target.value)}
                   className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-primary"
                 >
-                  <option value="Healthy">Healthy - Fully Operational</option>
-                  <option value="Warning">Warning - Needs Monitoring</option>
-                  <option value="Critical">Critical - Follow-up Required</option>
+                  {reportOptions.maintenanceStates.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-on-surface mb-1">Additional Notes</label>
+                <label className="block text-sm font-medium text-on-surface mb-1">Notes complémentaires</label>
                 <textarea
                   rows={2}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-primary"
-                  placeholder="Any extra observations (optional)..."
+                  placeholder="Observations supplementaires (optionnel)..."
                 />
               </div>
 
@@ -202,14 +201,14 @@ const MaintenanceTaskModal: React.FC<MaintenanceTaskModalProps> = ({ task, onClo
                   onClick={() => setIsReporting(false)}
                   className="px-4 py-2 rounded-md font-medium text-on-surface hover:bg-bg-secondary transition-colors"
                 >
-                  Cancel
+                  Annuler
                 </button>
                 <button
                   type="submit"
                   disabled={completeTask.isPending}
                   className="bg-primary text-on-primary px-4 py-2 rounded-md font-medium hover:bg-primary-fixed-dim transition-colors disabled:opacity-50"
                 >
-                  {completeTask.isPending ? 'Submitting...' : 'Submit Report'}
+                  {completeTask.isPending ? 'Soumission...' : 'Soumettre le rapport'}
                 </button>
               </div>
             </form>
@@ -230,7 +229,7 @@ const MaintenanceTaskModal: React.FC<MaintenanceTaskModalProps> = ({ task, onClo
             {isConfirmingDelete ? (
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <p className="text-sm text-on-surface-variant">
-                  Remove this maintenance task permanently?
+                  Supprimer définitivement cette tâche de maintenance ?
                 </p>
                 <div className="flex justify-end gap-3">
                   <button
@@ -238,7 +237,7 @@ const MaintenanceTaskModal: React.FC<MaintenanceTaskModalProps> = ({ task, onClo
                     onClick={() => setIsConfirmingDelete(false)}
                     className="px-4 py-2 rounded-md font-medium text-on-surface hover:bg-bg-surface transition-colors border border-border-subtle"
                   >
-                    Cancel
+                    Annuler
                   </button>
                   <button
                     type="button"
@@ -246,7 +245,7 @@ const MaintenanceTaskModal: React.FC<MaintenanceTaskModalProps> = ({ task, onClo
                     onClick={handleDelete}
                     className="bg-status-critical text-white px-4 py-2 rounded-md font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
                   >
-                    <Trash2 className="w-4 h-4" /> {deleteTask.isPending ? 'Removing...' : 'Remove'}
+                    <Trash2 className="w-4 h-4" /> {deleteTask.isPending ? 'Suppression...' : 'Supprimer'}
                   </button>
                 </div>
               </div>
@@ -258,7 +257,7 @@ const MaintenanceTaskModal: React.FC<MaintenanceTaskModalProps> = ({ task, onClo
                     onClick={() => setIsConfirmingDelete(true)}
                     className="px-4 py-2 rounded-md font-medium text-status-critical hover:bg-status-critical/10 transition-colors border border-status-critical/30 flex items-center gap-2"
                   >
-                    <Trash2 className="w-4 h-4" /> Remove
+                    <Trash2 className="w-4 h-4" /> Supprimer
                   </button>
                 ) : (
                   <div />
@@ -268,14 +267,14 @@ const MaintenanceTaskModal: React.FC<MaintenanceTaskModalProps> = ({ task, onClo
                     onClick={onClose}
                     className="px-4 py-2 rounded-md font-medium text-on-surface hover:bg-bg-surface transition-colors border border-border-subtle"
                   >
-                    Close
+                    Fermer
                   </button>
                   {canComplete && (
                     <button
                       onClick={() => setIsReporting(true)}
                       className="bg-primary text-on-primary px-4 py-2 rounded-md font-medium hover:bg-primary-fixed-dim transition-colors flex items-center gap-2"
                     >
-                      <CheckCircle className="w-4 h-4" /> Complete Task
+                      <CheckCircle className="w-4 h-4" /> Terminer la tâche
                     </button>
                   )}
                 </div>

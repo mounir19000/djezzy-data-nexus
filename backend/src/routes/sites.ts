@@ -40,9 +40,30 @@ router.get('/', requireAuth, async (req, res: Response) => {
       include: siteInclude,
       orderBy: { name: 'asc' }
     });
-    res.json(sites);
+
+    const equipmentIds = sites.flatMap(s => s.rooms.flatMap(r => r.equipments.map(e => e.id)));
+    const latestTelemetry = equipmentIds.length > 0 ? await prisma.telemetry.findMany({
+      where: { equipmentId: { in: equipmentIds } },
+      orderBy: { timestamp: 'desc' },
+      take: equipmentIds.length * 15
+    }) : [];
+
+    const latestMetricMap = latestTelemetry.reduce((acc: Record<string, Record<string, number>>, item: any) => {
+      acc[item.equipmentId] ||= {};
+      if (acc[item.equipmentId][item.metricType] === undefined) {
+        acc[item.equipmentId][item.metricType] = item.value;
+      }
+      return acc;
+    }, {});
+
+    const dynamicSites = sites.map(site => ({
+      ...site,
+      overallHealth: calculateSiteHealth(site as any, latestMetricMap).score
+    }));
+
+    res.json(dynamicSites);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch sites' });
+    res.status(500).json({ error: 'Échec du chargement des sites' });
   }
 });
 
@@ -53,11 +74,29 @@ router.get('/:id', requireAuth, async (req, res: Response) => {
       include: siteInclude
     });
 
-    if (!site) return res.status(404).json({ error: 'Site not found' });
+    if (!site) return res.status(404).json({ error: 'Site introuvable' });
 
-    res.json(site);
+    const equipmentIds = site.rooms.flatMap((r: any) => r.equipments.map((e: any) => e.id));
+    const latestTelemetry = equipmentIds.length > 0 ? await prisma.telemetry.findMany({
+      where: { equipmentId: { in: equipmentIds } },
+      orderBy: { timestamp: 'desc' },
+      take: equipmentIds.length * 15
+    }) : [];
+
+    const latestMetricMap = latestTelemetry.reduce((acc: Record<string, Record<string, number>>, item: any) => {
+      acc[item.equipmentId] ||= {};
+      if (acc[item.equipmentId][item.metricType] === undefined) {
+        acc[item.equipmentId][item.metricType] = item.value;
+      }
+      return acc;
+    }, {});
+
+    res.json({
+      ...site,
+      overallHealth: calculateSiteHealth(site as any, latestMetricMap).score
+    });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch site' });
+    res.status(500).json({ error: 'Échec du chargement du site' });
   }
 });
 
@@ -68,7 +107,7 @@ router.get('/:id/dashboard', requireAuth, async (req, res: Response) => {
       include: siteInclude
     });
 
-    if (!site) return res.status(404).json({ error: 'Site not found' });
+    if (!site) return res.status(404).json({ error: 'Site introuvable' });
 
     const equipmentIds = site.rooms.flatMap((room: any) => room.equipments.map((equipment: any) => equipment.id));
     const latestTelemetry = equipmentIds.length > 0 ? await prisma.telemetry.findMany({
@@ -152,7 +191,7 @@ router.get('/:id/dashboard', requireAuth, async (req, res: Response) => {
     });
   } catch (error) {
     console.error('Site dashboard error:', error);
-    res.status(500).json({ error: 'Failed to fetch site dashboard' });
+    res.status(500).json({ error: 'Échec du chargement du tableau de bord site' });
   }
 });
 

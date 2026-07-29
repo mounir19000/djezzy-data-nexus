@@ -31,7 +31,7 @@ router.get('/', requireAuth, async (req: any, res: Response) => {
     const normalizedManualArticles = manualArticles.map((article: any) => ({
       ...article,
       failureType: article.category,
-      severity: article.tags?.find((tag: string) => ['Info', 'Faible', 'Moyenne', 'Elevee', 'Critique', 'Critical', 'Warning'].includes(tag)) || 'General',
+      severity: article.tags?.find((tag: string) => ['Info', 'Faible', 'Moyenne', 'Élevée', 'Elevee', 'Critique', 'Critical', 'Warning'].includes(tag)) || 'General',
       problem: article.content,
       symptoms: [],
       causes: [],
@@ -85,7 +85,7 @@ router.get('/', requireAuth, async (req: any, res: Response) => {
     res.json(articles);
   } catch (error) {
     console.error('Fetch KB articles error:', error);
-    res.status(500).json({ error: 'Failed to fetch KB articles' });
+    res.status(500).json({ error: 'Échec du chargement des articles de connaissance' });
   }
 });
 
@@ -107,7 +107,7 @@ router.get('/filters', requireAuth, async (req, res: Response) => {
       failureType: [...new Set(articles.map((article: any) => article.failureType || article.category).filter(Boolean))].sort()
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch KB filters' });
+    res.status(500).json({ error: 'Échec du chargement des filtres de connaissance' });
   }
 });
 
@@ -115,7 +115,7 @@ router.post('/', requireAuth, requireRole(['Engineer']), async (req: any, res: R
   const { title, category, tags, content } = req.body;
 
   if (!title || !category || !content) {
-    return res.status(400).json({ error: 'title, category, and content are required' });
+    return res.status(400).json({ error: 'title, category et content sont requis' });
   }
 
   const normalizedTags = Array.isArray(tags)
@@ -138,7 +138,7 @@ router.post('/', requireAuth, requireRole(['Engineer']), async (req: any, res: R
     res.status(201).json(article);
   } catch (error) {
     console.error('Create knowledge article error:', error);
-    res.status(500).json({ error: 'Failed to create KB article' });
+    res.status(500).json({ error: 'Échec de la création de l’article de connaissance' });
   }
 });
 

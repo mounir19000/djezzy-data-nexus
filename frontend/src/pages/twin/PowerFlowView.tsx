@@ -5,6 +5,7 @@ import type { Edge, Node } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useTelemetryStore } from '../../store/useTelemetryStore';
 import { useSite } from '../../hooks/useSites';
+import { displayOperationalText, displayStatus, displayText } from '../../lib/frenchLabels';
 
 type FlowStatus = 'healthy' | 'warning' | 'critical' | 'offline';
 
@@ -78,21 +79,21 @@ const PowerFlowView = () => {
 
   const nodes: Node[] = useMemo(() => [
     ...(hasDetailedTopology ? [
-      { id: 'grid', position: { x: 330, y: 20 }, data: { label: 'National Grid\nL1/L2/L3 Input', alarms: [] }, type: 'input' as const, style: nodeStyle(atsStatus === 'warning' ? 'warning' : 'healthy') },
-      { id: 'transformer', position: { x: 330, y: 130 }, data: { label: 'Transformer TR1\n400 KVA', alarms: getAlarmsForEquipment('Transformer-TR1-400KVA') }, style: nodeStyle(statusForEquipment('Transformer-TR1-400KVA')) },
-      { id: 'ats', position: { x: 330, y: 240 }, data: { label: 'ATS / TGBT\nSource Transfer', alarms: getAlarmsForEquipment('ATS-TGBT') }, style: nodeStyle(atsStatus) },
+      { id: 'grid', position: { x: 330, y: 20 }, data: { label: 'Réseau national\nEntrée L1/L2/L3', alarms: [] }, type: 'input' as const, style: nodeStyle(atsStatus === 'warning' ? 'warning' : 'healthy') },
+      { id: 'transformer', position: { x: 330, y: 130 }, data: { label: 'Transformateur TR1\n400 KVA', alarms: getAlarmsForEquipment('Transformer-TR1-400KVA') }, style: nodeStyle(statusForEquipment('Transformer-TR1-400KVA')) },
+      { id: 'ats', position: { x: 330, y: 240 }, data: { label: 'ATS / TGBT\nTransfert source', alarms: getAlarmsForEquipment('ATS-TGBT') }, style: nodeStyle(atsStatus) },
       { id: 'generator1', position: { x: 70, y: 215 }, data: { label: 'GE-01 Cummins\n400 KVA', alarms: getAlarmsForEquipment('GE-01-CUMMINS-400KVA') }, style: nodeStyle(statusForEquipment('GE-01-CUMMINS-400KVA')) },
-      { id: 'generator2', position: { x: 70, y: 325 }, data: { label: 'GE-02 SDMO\nStandby', alarms: getAlarmsForEquipment('GE-02-SDMO-400KVA') }, style: nodeStyle(generatorStatus) },
-      { id: 'ups', position: { x: 330, y: 365 }, data: { label: `UPS\nLoad ${upsLoad.toFixed(1)}%`, alarms: getAlarmsForEquipment('UPS') }, style: nodeStyle(upsLoad > 85 ? 'critical' : upsStatus) },
-      { id: 'panel', position: { x: 330, y: 490 }, data: { label: 'Distribution Panels\nProtected Loads', alarms: [] }, style: nodeStyle(upsStatus === 'critical' ? 'critical' : atsStatus) },
-      { id: 'switch', position: { x: 60, y: 630 }, data: { label: 'Switch Room\nCore Equipment', alarms: getAlarmsForEquipment('SWITCH-MSC10-Core') }, type: 'output' as const, style: nodeStyle(statusForEquipment('SWITCH-MSC10-Core')) },
-      { id: 'battery', position: { x: 250, y: 630 }, data: { label: 'Battery Room\nBattery Bank', alarms: getAlarmsForEquipment('BATT-BANK-A') }, type: 'output' as const, style: nodeStyle(statusForEquipment('BATT-BANK-A')) },
-      { id: 'enr', position: { x: 440, y: 630 }, data: { label: 'ENR Room\nHuawei Rectifier', alarms: getAlarmsForEquipment('PS-HUAWEI-TP48300D') }, type: 'output' as const, style: nodeStyle(statusForEquipment('PS-HUAWEI-TP48300D')) },
-      { id: 'vsat', position: { x: 630, y: 630 }, data: { label: 'V-SAT Room\nTransmission Rack', alarms: getAlarmsForEquipment('VSAT-RACK-01') }, type: 'output' as const, style: nodeStyle(statusForEquipment('VSAT-RACK-01')) },
-      { id: 'cooling', position: { x: 630, y: 365 }, data: { label: 'Cooling Systems\nSTULZ / ENIEM', alarms: getAlarmsForEquipment('CLIM-STULZ-01') }, type: 'output' as const, style: nodeStyle(coolingStatus) }
+      { id: 'generator2', position: { x: 70, y: 325 }, data: { label: 'GE-02 SDMO\nSecours', alarms: getAlarmsForEquipment('GE-02-SDMO-400KVA') }, style: nodeStyle(generatorStatus) },
+      { id: 'ups', position: { x: 330, y: 365 }, data: { label: `UPS\nCharge ${upsLoad.toFixed(1)}%`, alarms: getAlarmsForEquipment('UPS') }, style: nodeStyle(upsLoad > 85 ? 'critical' : upsStatus) },
+      { id: 'panel', position: { x: 330, y: 490 }, data: { label: 'Tableaux de distribution\nCharges protégées', alarms: [] }, style: nodeStyle(upsStatus === 'critical' ? 'critical' : atsStatus) },
+      { id: 'switch', position: { x: 60, y: 630 }, data: { label: 'Salle switch\nEquipements cœur', alarms: getAlarmsForEquipment('SWITCH-MSC10-Core') }, type: 'output' as const, style: nodeStyle(statusForEquipment('SWITCH-MSC10-Core')) },
+      { id: 'battery', position: { x: 250, y: 630 }, data: { label: 'Salle batteries\nBanc batteries', alarms: getAlarmsForEquipment('BATT-BANK-A') }, type: 'output' as const, style: nodeStyle(statusForEquipment('BATT-BANK-A')) },
+      { id: 'enr', position: { x: 440, y: 630 }, data: { label: 'Salle ENR\nRedresseur Huawei', alarms: getAlarmsForEquipment('PS-HUAWEI-TP48300D') }, type: 'output' as const, style: nodeStyle(statusForEquipment('PS-HUAWEI-TP48300D')) },
+      { id: 'vsat', position: { x: 630, y: 630 }, data: { label: 'Salle V-SAT\nBaie transmission', alarms: getAlarmsForEquipment('VSAT-RACK-01') }, type: 'output' as const, style: nodeStyle(statusForEquipment('VSAT-RACK-01')) },
+      { id: 'cooling', position: { x: 630, y: 365 }, data: { label: 'Climatisation\nSTULZ / ENIEM', alarms: getAlarmsForEquipment('CLIM-STULZ-01') }, type: 'output' as const, style: nodeStyle(coolingStatus) }
     ] : [
-      { id: 'grid', position: { x: 300, y: 40 }, data: { label: `${currentSite?.name || 'Site'}\nGrid Input`, alarms: [] }, type: 'input' as const, style: nodeStyle('healthy') },
-      { id: 'panel', position: { x: 300, y: 210 }, data: { label: 'Site Distribution\nConfigured Loads', alarms: [] }, style: nodeStyle(rooms.some((room: any) => statusForRoom(room) === 'critical') ? 'critical' : rooms.some((room: any) => statusForRoom(room) === 'warning') ? 'warning' : 'healthy') },
+      { id: 'grid', position: { x: 300, y: 40 }, data: { label: `${displayText(currentSite?.name || 'Site')}\nEntrée réseau`, alarms: [] }, type: 'input' as const, style: nodeStyle('healthy') },
+      { id: 'panel', position: { x: 300, y: 210 }, data: { label: 'Distribution site\nCharges configurees', alarms: [] }, style: nodeStyle(rooms.some((room: any) => statusForRoom(room) === 'critical') ? 'critical' : rooms.some((room: any) => statusForRoom(room) === 'warning') ? 'warning' : 'healthy') },
       ...rooms.map((room: any, index: number) => {
         const column = index % 4;
         const row = Math.floor(index / 4);
@@ -102,7 +103,7 @@ const PowerFlowView = () => {
         return {
           id: room.id,
           position: { x: 60 + column * 190, y: 410 + row * 140 },
-          data: { label: `${room.name}\n${equipmentCount} equipment`, alarms: getAlarmsForRoom(room) },
+          data: { label: `${displayText(room.name)}\n${equipmentCount} équipement${equipmentCount > 1 ? 's' : ''}`, alarms: getAlarmsForRoom(room) },
           type: 'output' as const,
           style: nodeStyle(status)
         };
@@ -159,8 +160,8 @@ const PowerFlowView = () => {
     return (
       <div className="h-full min-h-[560px] w-full bg-background rounded-lg border border-border-subtle flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-xl font-display font-bold text-on-surface">Loading Power Flow</h2>
-          <p className="text-on-surface-variant mt-2">Preparing electrical topology...</p>
+          <h2 className="text-xl font-display font-bold text-on-surface">Chargement du flux électrique</h2>
+          <p className="text-on-surface-variant mt-2">Préparation de la topologie électrique...</p>
         </div>
       </div>
     );
@@ -170,8 +171,8 @@ const PowerFlowView = () => {
     return (
       <div className="h-full min-h-[560px] w-full bg-background rounded-lg border border-border-subtle flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-xl font-display font-bold text-status-critical">Power Flow Unavailable</h2>
-          <p className="text-on-surface-variant mt-2">The selected site could not be loaded.</p>
+          <h2 className="text-xl font-display font-bold text-status-critical">Flux électrique indisponible</h2>
+          <p className="text-on-surface-variant mt-2">Le site sélectionné n’a pas pu être chargé.</p>
         </div>
       </div>
     );
@@ -181,8 +182,8 @@ const PowerFlowView = () => {
     return (
       <div className="h-full min-h-[560px] w-full bg-background rounded-lg border border-border-subtle flex items-center justify-center">
         <div className="text-center max-w-md">
-          <h2 className="text-xl font-display font-bold text-on-surface">{currentSite.name} Power Flow</h2>
-          <p className="text-on-surface-variant mt-2">Coming soon. This site does not have its power topology loaded yet.</p>
+          <h2 className="text-xl font-display font-bold text-on-surface">{displayText(currentSite.name)} Flux électrique</h2>
+          <p className="text-on-surface-variant mt-2">Bientôt disponible. Ce site n’a pas encore de topologie électrique chargée.</p>
         </div>
       </div>
     );
@@ -211,21 +212,21 @@ const PowerFlowView = () => {
           style={{ left: tooltip.x, top: tooltip.y }}
         >
           <div className="font-semibold text-on-surface mb-2 pb-2 border-b border-border-subtle text-sm">
-            {tooltip.label} Alarms
+            Alarmes - {tooltip.label}
           </div>
           <div className="flex flex-col gap-2">
             {tooltip.alarms.slice(0, 3).map((alarm: any, idx: number) => (
               <div key={idx} className="flex items-start gap-2 text-xs">
                 <div className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${alarm.severity === 'critical' ? 'bg-status-critical' : alarm.severity === 'warning' ? 'bg-status-warning' : 'bg-status-healthy'}`} />
                 <div>
-                  <div className="font-medium text-on-surface">{alarm.type || 'Alarm'}</div>
-                  <div className="text-on-surface-variant mt-0.5 line-clamp-2">{alarm.message}</div>
+                  <div className="font-medium text-on-surface">{displayStatus(alarm.type) || 'Alarme'}</div>
+                  <div className="text-on-surface-variant mt-0.5 line-clamp-2">{displayOperationalText(alarm.message)}</div>
                 </div>
               </div>
             ))}
             {tooltip.alarms.length > 3 && (
               <div className="text-xs text-on-surface-variant italic mt-1">
-                + {tooltip.alarms.length - 3} more alarms...
+                + {tooltip.alarms.length - 3} autres alarmes...
               </div>
             )}
           </div>
@@ -236,4 +237,3 @@ const PowerFlowView = () => {
 };
 
 export default PowerFlowView;
-

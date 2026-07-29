@@ -4,6 +4,7 @@ import { Clock, AlertTriangle, Users } from 'lucide-react';
 import Badge from '../ui/Badge';
 import { API_BASE_URL } from '../../lib/api';
 import { useAppStore } from '../../store/useAppStore';
+import { displayRecurrence, displayText, formatDateTime } from '../../lib/frenchLabels';
 
 interface MaintenanceSchedulerProps {
   siteId?: string;
@@ -14,7 +15,7 @@ const fetchSchedules = async () => {
   const res = await fetch(`${API_BASE_URL}/api/maintenance/schedules`, {
     headers: { Authorization: `Bearer ${token}` }
   });
-  if (!res.ok) throw new Error('Failed to fetch schedules');
+  if (!res.ok) throw new Error('Échec du chargement des planifications');
   return res.json();
 };
 
@@ -23,7 +24,7 @@ const fetchEngineers = async () => {
   const res = await fetch(`${API_BASE_URL}/api/users`, {
     headers: { Authorization: `Bearer ${token}` }
   });
-  if (!res.ok) throw new Error('Failed to fetch users');
+  if (!res.ok) throw new Error('Échec du chargement des utilisateurs');
   const users = await res.json();
   return users.filter((u: any) => u.role === 'Engineer');
 };
@@ -34,14 +35,14 @@ const fetchEquipment = async (siteId?: string, user?: any) => {
     const res = await fetch(`${API_BASE_URL}/api/sites/${siteId}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    if (!res.ok) throw new Error('Failed to fetch equipment');
+    if (!res.ok) throw new Error('Échec du chargement des équipements');
     const data = await res.json();
     return data.rooms?.flatMap((r: any) => r.equipments?.map((eq:any) => ({...eq, siteName: data.name}))) || [];
   } else {
     const res = await fetch(`${API_BASE_URL}/api/sites`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    if (!res.ok) throw new Error('Failed to fetch equipment');
+    if (!res.ok) throw new Error('Échec du chargement des équipements');
     let sites = await res.json();
     
     if (user && user.role !== 'Super Admin') {
@@ -79,7 +80,7 @@ const MaintenanceScheduler: React.FC<MaintenanceSchedulerProps> = ({ siteId }) =
         },
         body: JSON.stringify(data)
       });
-      if (!res.ok) throw new Error('Failed to create schedule');
+      if (!res.ok) throw new Error('Échec de la création de la planification');
       return res.json();
     },
     onSuccess: () => {
@@ -104,7 +105,7 @@ const MaintenanceScheduler: React.FC<MaintenanceSchedulerProps> = ({ siteId }) =
         },
         body: JSON.stringify(data)
       });
-      if (!res.ok) throw new Error('Failed to create sudden maintenance task');
+      if (!res.ok) throw new Error('Échec de la création de la tâche de maintenance urgente');
       return res.json();
     },
     onSuccess: () => {
@@ -137,75 +138,75 @@ const MaintenanceScheduler: React.FC<MaintenanceSchedulerProps> = ({ siteId }) =
           onClick={() => setActiveTab('recurring')}
           className={`text-sm font-medium transition-all duration-200 border-b-2 pb-1 ${activeTab === 'recurring' ? 'text-primary border-primary' : 'text-on-surface-variant hover:text-on-surface border-transparent'}`}
         >
-          Recurring Maintenance
+          Maintenance récurrente
         </button>
         <button
           onClick={() => setActiveTab('sudden')}
           className={`text-sm font-medium transition-all duration-200 border-b-2 pb-1 ${activeTab === 'sudden' ? 'text-status-warning border-status-warning' : 'text-on-surface-variant hover:text-on-surface border-transparent'}`}
         >
-          Sudden Maintenance
+          Maintenance urgente
         </button>
       </div>
       <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-6">
           <h3 className="text-lg font-medium text-on-surface flex items-center gap-2">
-            {activeTab === 'recurring' ? 'Create Recurring Schedule' : 'Dispatch Sudden Maintenance'}
+            {activeTab === 'recurring' ? 'Créer une planification récurrente' : 'Déclencher une maintenance urgente'}
           </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-on-surface-variant mb-1">Title</label>
+              <label className="block text-xs font-medium text-on-surface-variant mb-1">Titre</label>
               <input
                 required
                 type="text"
                 value={title}
                 onChange={e => setTitle(e.target.value)}
                 className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-sm text-on-surface focus:border-primary focus:outline-none"
-                placeholder="e.g. Check Generator Oil"
+                placeholder="ex. Vérifier l’huile du groupe électrogène"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-on-surface-variant mb-1">Device / Equipment</label>
+              <label className="block text-xs font-medium text-on-surface-variant mb-1">Appareil / équipement</label>
               <select
                 required
                 value={equipmentId}
                 onChange={e => setEquipmentId(e.target.value)}
                 className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-sm text-on-surface focus:border-primary focus:outline-none"
               >
-                <option value="">Select equipment...</option>
+                <option value="">Sélectionner un équipement...</option>
                 {equipmentList?.map((eq: any) => (
-                  <option key={eq.id} value={eq.id}>{eq.name} ({eq.type}) - {eq.siteName}</option>
+                  <option key={eq.id} value={eq.id}>{eq.name} ({displayText(eq.type)}) - {displayText(eq.siteName)}</option>
                 ))}
               </select>
             </div>
             {activeTab === 'recurring' && (
               <div>
-                <label className="block text-xs font-medium text-on-surface-variant mb-1">Recurrence</label>
+                <label className="block text-xs font-medium text-on-surface-variant mb-1">Récurrence</label>
                 <select
                   value={recurrence}
                   onChange={e => setRecurrence(e.target.value)}
                   className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-sm text-on-surface focus:border-primary focus:outline-none"
                 >
-                  <option value="weekly">Weekly</option>
-                  <option value="monthly">Monthly</option>
+                  <option value="weekly">Hebdomadaire</option>
+                  <option value="monthly">Mensuelle</option>
                 </select>
               </div>
             )}
             <div>
-              <label className="block text-xs font-medium text-on-surface-variant mb-1">Assigned Engineer</label>
+              <label className="block text-xs font-medium text-on-surface-variant mb-1">Ingénieur assigné</label>
               <select
                 required
                 value={assignedTo}
                 onChange={e => setAssignedTo(e.target.value)}
                 className="w-full bg-background border border-border-subtle rounded-md px-3 py-2 text-sm text-on-surface focus:border-primary focus:outline-none"
               >
-                <option value="">Select engineer...</option>
+                <option value="">Sélectionner un ingénieur...</option>
                 {engineers?.map((user: any) => (
                   <option key={user.id} value={user.id}>{user.firstName} {user.lastName}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-on-surface-variant mb-1 uppercase tracking-wider">Start Date</label>
+              <label className="block text-xs font-medium text-on-surface-variant mb-1 uppercase tracking-wider">Date de début</label>
               <input
                 required
                 type="date"
@@ -220,30 +221,30 @@ const MaintenanceScheduler: React.FC<MaintenanceSchedulerProps> = ({ siteId }) =
                 disabled={createSchedule.isPending || createSuddenTask.isPending}
                 className={`w-full py-2.5 rounded-lg font-medium text-sm text-white shadow-md transition-all duration-300 hover:shadow-lg transform active:scale-95 disabled:opacity-50 disabled:active:scale-100 ${activeTab === 'recurring' ? 'bg-gradient-to-r from-primary to-primary-fixed-dim' : 'bg-gradient-to-r from-status-warning to-amber-600 text-black'}`}
               >
-                {createSchedule.isPending || createSuddenTask.isPending ? 'Saving...' : activeTab === 'recurring' ? 'Create Schedule' : 'Dispatch Now'}
+                {createSchedule.isPending || createSuddenTask.isPending ? 'Enregistrement...' : activeTab === 'recurring' ? 'Créer la planification' : 'Declencher maintenant'}
               </button>
             </div>
           </form>
         </div>
 
         <div>
-          <h3 className="text-lg font-medium text-on-surface mb-4">Active Schedules</h3>
+          <h3 className="text-lg font-medium text-on-surface mb-4">Planifications actives</h3>
           <div className="space-y-3 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
             {!schedules || schedules.length === 0 ? (
-              <div className="text-sm text-on-surface-variant italic p-4 bg-background rounded-lg border border-border-subtle border-dashed">No active recurring schedules.</div>
+              <div className="text-sm text-on-surface-variant italic p-4 bg-background rounded-lg border border-border-subtle border-dashed">Aucune planification récurrente active.</div>
             ) : (
               schedules.map((sched: any) => (
                 <div key={sched.id} className="bg-background border border-border-subtle rounded-lg p-4 hover:border-primary/50 hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
                   <div className="flex justify-between items-start mb-2">
                     <h4 className="text-sm font-semibold text-on-surface">{sched.title}</h4>
-                    <Badge status="healthy">{sched.recurrence}</Badge>
+                    <Badge status="healthy">{displayRecurrence(sched.recurrence)}</Badge>
                   </div>
                   <div className="space-y-1.5 mt-3">
                     <div className="flex items-center gap-2 text-xs text-on-surface-variant">
-                      <Clock className="w-3.5 h-3.5 text-primary" /> <span className="text-on-surface">Next run:</span> {new Date(sched.nextRunDate).toLocaleString()}
+                      <Clock className="w-3.5 h-3.5 text-primary" /> <span className="text-on-surface">Prochaine execution :</span> {formatDateTime(sched.nextRunDate)}
                     </div>
                     <div className="flex items-center gap-2 text-xs text-on-surface-variant">
-                      <AlertTriangle className="w-3.5 h-3.5 text-status-warning" /> {sched.equipment?.name} ({sched.equipment?.type})
+                      <AlertTriangle className="w-3.5 h-3.5 text-status-warning" /> {sched.equipment?.name} ({displayText(sched.equipment?.type)})
                     </div>
                     {sched.assignee && (
                       <div className="flex items-center gap-2 text-xs text-on-surface-variant">

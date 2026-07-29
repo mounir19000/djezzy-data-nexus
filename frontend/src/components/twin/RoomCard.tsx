@@ -1,6 +1,7 @@
 import React from 'react';
 import Badge from '../ui/Badge';
 import { Thermometer, AlertCircle, Ticket } from 'lucide-react';
+import { displayStatus } from '../../lib/frenchLabels';
 
 interface RoomCardProps {
   name: string;
@@ -33,7 +34,7 @@ const RoomCard: React.FC<RoomCardProps> = ({ name, status, temp, healthScore, ti
           {healthScore !== undefined && (
             <div className="mt-2 w-full max-w-[140px]">
               <div className="flex items-center justify-between text-[11px] font-mono mb-1">
-                <span className="text-on-surface-variant uppercase tracking-wider">Health</span>
+                <span className="text-on-surface-variant uppercase tracking-wider">Santé</span>
                 <span className={
                   healthScore >= 90 ? 'text-status-healthy font-bold' :
                   healthScore >= 70 ? 'text-status-warning font-bold' :
@@ -54,7 +55,7 @@ const RoomCard: React.FC<RoomCardProps> = ({ name, status, temp, healthScore, ti
           )}
         </div>
         <div className="shrink-0">
-          <Badge status={status}>{status.toUpperCase()}</Badge>
+          <Badge status={status}>{displayStatus(status, true)}</Badge>
         </div>
       </div>
 
@@ -68,14 +69,14 @@ const RoomCard: React.FC<RoomCardProps> = ({ name, status, temp, healthScore, ti
       <div className="mt-4 pt-4 border-t border-border-subtle flex justify-between">
         <div className="flex items-center gap-1">
           <AlertCircle className={`w-4 h-4 ${alarms > 0 ? 'text-status-critical' : 'text-status-healthy'}`} />
-          <span className="text-xs font-mono text-on-surface-variant">{alarms} Alarms</span>
+          <span className="text-xs font-mono text-on-surface-variant">{alarms} alarme{alarms > 1 ? 's' : ''}</span>
         </div>
         <div className="flex items-center gap-1">
           <Ticket className="w-4 h-4 text-on-surface-variant" />
-          <span className="text-xs font-mono text-on-surface-variant">{tickets} Tickets</span>
+          <span className="text-xs font-mono text-on-surface-variant">{tickets} ticket{tickets > 1 ? 's' : ''}</span>
         </div>
       </div>
-      <div className="mt-2 text-xs font-mono text-on-surface-variant">{equipmentCount} Equipment</div>
+      <div className="mt-2 text-xs font-mono text-on-surface-variant">{equipmentCount} équipement{equipmentCount > 1 ? 's' : ''}</div>
     </div>
   );
 };

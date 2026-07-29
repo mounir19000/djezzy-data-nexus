@@ -19,16 +19,16 @@ router.post('/login', async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return res.status(401).json({ error: { message: 'Invalid email or password' } });
+      return res.status(401).json({ error: { message: 'Email ou mot de passe invalide' } });
     }
 
     // In a real app, compare bcrypt hash. For this MVP, all seeded users share admin123.
     if (user.passwordHash === 'hashed_password_mock') {
       if (password !== 'admin123') {
-        return res.status(401).json({ error: { message: 'Invalid email or password' } });
+        return res.status(401).json({ error: { message: 'Email ou mot de passe invalide' } });
       }
     } else if (password !== user.passwordHash) {
-      return res.status(401).json({ error: { message: 'Invalid email or password' } });
+      return res.status(401).json({ error: { message: 'Email ou mot de passe invalide' } });
     }
 
     const token = jwt.sign(
@@ -52,7 +52,7 @@ router.post('/login', async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: { message: 'Internal server error during login' } });
+    res.status(500).json({ error: { message: 'Erreur serveur interne pendant la connexion' } });
   }
 });
 
@@ -68,7 +68,7 @@ router.get('/me', requireAuth, async (req: AuthRequest, res: Response) => {
     });
 
     if (!user) {
-      return res.status(404).json({ error: { message: 'User not found' } });
+      return res.status(404).json({ error: { message: 'Utilisateur introuvable' } });
     }
 
     res.json({
@@ -83,7 +83,7 @@ router.get('/me', requireAuth, async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     console.error('Me endpoint error:', error);
-    res.status(500).json({ error: { message: 'Internal server error' } });
+    res.status(500).json({ error: { message: 'Erreur serveur interne' } });
   }
 });
 

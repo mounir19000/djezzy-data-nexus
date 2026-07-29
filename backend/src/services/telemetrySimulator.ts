@@ -210,8 +210,8 @@ const equipmentForAlarm = (
 };
 
 const sourceLabel = (source: string) => {
-  if (source === 'DS3_UPS_Alarm') return 'UPS Log';
-  if (source === 'DS3_Clim_Alarm') return 'Clim Log';
+  if (source === 'DS3_UPS_Alarm') return 'Journal UPS';
+  if (source === 'DS3_Clim_Alarm') return 'Journal clim';
   return 'SCADA';
 };
 
@@ -302,7 +302,7 @@ const notifyAlarmRecipients = async (
       data: {
         userId: recipientId,
         siteId,
-        message: `${alarm.severity.toUpperCase()} simulated alarm: ${alarm.description}`
+        message: `Alarme simulee ${alarm.severity.toUpperCase()} : ${alarm.description}`
       }
     });
 

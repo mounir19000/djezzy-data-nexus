@@ -29,7 +29,7 @@ export default {
         "tertiary-container": "#00ecfe",
         "status-offline": "#64748B",
         "surface-tint": "#ecc200",
-        "primary-container": "#ffd200",
+        "primary-container": "#ffD200",
         "on-secondary-fixed-variant": "#6900b3",
         "inverse-on-surface": "#2f3035",
         "on-tertiary-fixed": "#001f23",
@@ -59,7 +59,7 @@ export default {
         "error-container": "#93000a",
         "surface-container-lowest": "#0c0e12",
         "surface-container-low": "#1a1c20",
-        "primary": "#fff2d1",
+        "primary": "#ffD200",
         "on-background": "#e2e2e8"
       },
       fontFamily: {

@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
 import { useSiteDashboard } from '../../hooks/useSites';
+import { displayOperationalText, displayStatus, displayText } from '../../lib/frenchLabels';
 
 const statusForScore = (score: number): 'healthy' | 'warning' | 'critical' => {
   if (score >= 90) return 'healthy';
@@ -34,9 +35,9 @@ const toneForStatus = {
 };
 
 const statusLabel = {
-  healthy: 'Healthy',
-  warning: 'Warning',
-  critical: 'Critical'
+  healthy: 'Sain',
+  warning: 'Avertissement',
+  critical: 'Critique'
 };
 
 const uniqueItems = (items: string[]) => [...new Set(items.filter(Boolean))];
@@ -49,8 +50,8 @@ const SiteDashboard = () => {
     return (
       <div className="h-full min-h-[560px] bg-bg-surface border border-border-subtle rounded-lg p-6 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-xl font-display font-bold text-on-surface">Loading Site Dashboard</h2>
-          <p className="text-on-surface-variant mt-2">Loading latest site status...</p>
+          <h2 className="text-xl font-display font-bold text-on-surface">Chargement du tableau de bord site</h2>
+          <p className="text-on-surface-variant mt-2">Chargement du dernier état du site...</p>
         </div>
       </div>
     );
@@ -60,8 +61,8 @@ const SiteDashboard = () => {
     return (
       <div className="h-full min-h-[560px] bg-bg-surface border border-border-subtle rounded-lg p-6 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-xl font-display font-bold text-status-critical">Site Dashboard Unavailable</h2>
-          <p className="text-on-surface-variant mt-2">The selected site could not be loaded.</p>
+          <h2 className="text-xl font-display font-bold text-status-critical">Tableau de bord site indisponible</h2>
+          <p className="text-on-surface-variant mt-2">Le site sélectionné n’a pas pu être chargé.</p>
         </div>
       </div>
     );
@@ -80,8 +81,8 @@ const SiteDashboard = () => {
     return (
       <div className="h-full min-h-[560px] bg-bg-surface border border-border-subtle rounded-lg p-6 flex items-center justify-center">
         <div className="text-center max-w-md">
-          <h2 className="text-2xl font-display font-bold text-on-surface">{site.name} Dashboard</h2>
-          <p className="text-on-surface-variant mt-3">Coming soon. This site does not have its operational model, telemetry, or alarms loaded yet.</p>
+          <h2 className="text-2xl font-display font-bold text-on-surface">{displayText(site.name)} Tableau de bord</h2>
+          <p className="text-on-surface-variant mt-3">Bientôt disponible. Ce site n’a pas encore de modèle opérationnel, de télémétrie ou d’alarmes chargés.</p>
         </div>
       </div>
     );
@@ -98,17 +99,17 @@ const SiteDashboard = () => {
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div className="space-y-4">
               <div>
-                <p className="text-sm text-on-surface-variant">Site Health</p>
+                <p className="text-sm text-on-surface-variant">Santé du site</p>
                 <h3 className="text-2xl font-display font-bold text-on-surface mt-1">{statusLabel[healthStatus]}</h3>
               </div>
 
               <div>
-                <p className="text-xs uppercase text-on-surface-variant font-mono">Main Causes</p>
+                <p className="text-xs uppercase text-on-surface-variant font-mono">Causes principales</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {(healthCauses.length > 0 ? healthCauses : ['No active causes detected.']).map((cause) => (
                     <span key={cause} className={`inline-flex items-center gap-2 rounded-md border ${healthTone.border} ${healthTone.bg} px-3 py-2 text-sm text-on-surface`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${healthTone.bar}`} />
-                      {cause}
+                      {displayOperationalText(cause)}
                     </span>
                   ))}
                 </div>
@@ -132,7 +133,7 @@ const SiteDashboard = () => {
         <div className="bg-bg-surface border border-border-subtle rounded-lg p-6 flex flex-col justify-between">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-on-surface-variant">Active Alarms</p>
+              <p className="text-sm text-on-surface-variant">Alarmes actives</p>
               <div className="text-5xl font-display font-bold text-on-surface mt-3">{summary.activeAlarms}</div>
             </div>
             <div className="w-11 h-11 rounded-md bg-status-critical/10 border border-status-critical/30 grid place-items-center">
@@ -140,8 +141,8 @@ const SiteDashboard = () => {
             </div>
           </div>
           <div className="mt-5 flex flex-wrap gap-2 text-xs">
-            <span className="px-2.5 py-1 rounded-md border border-status-critical/30 bg-status-critical/10 text-status-critical">{alarmCounts.critical || 0} critical</span>
-            <span className="px-2.5 py-1 rounded-md border border-status-warning/30 bg-status-warning/10 text-status-warning">{alarmCounts.warning || 0} warning</span>
+            <span className="px-2.5 py-1 rounded-md border border-status-critical/30 bg-status-critical/10 text-status-critical">{alarmCounts.critical || 0} critiques</span>
+            <span className="px-2.5 py-1 rounded-md border border-status-warning/30 bg-status-warning/10 text-status-warning">{alarmCounts.warning || 0} avertissements</span>
           </div>
         </div>
       </section>
@@ -151,15 +152,15 @@ const SiteDashboard = () => {
         <div className="bg-bg-surface border border-border-subtle rounded-lg p-6 flex flex-col">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h3 className="text-lg font-sans font-medium text-on-surface">Open Tickets</h3>
-              <p className="text-sm text-on-surface-variant mt-1">Recent active tickets.</p>
+              <h3 className="text-lg font-sans font-medium text-on-surface">Tickets ouverts</h3>
+              <p className="text-sm text-on-surface-variant mt-1">Tickets actifs recents.</p>
             </div>
-            <Link to={`/sites/${site.id}/tickets`} className="text-xs text-primary hover:underline">View All</Link>
+            <Link to={`/sites/${site.id}/tickets`} className="text-xs text-primary hover:underline">Tout voir</Link>
           </div>
           <div className="space-y-3 flex-1">
             {tickets.filter((t: any) => !['resolved', 'closed'].includes(t.status)).slice(0, 5).length === 0 ? (
               <div className="bg-background border border-border-subtle rounded-md p-4 text-sm text-on-surface-variant flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-status-healthy" /> No open tickets.
+                <CheckCircle className="w-4 h-4 text-status-healthy" /> Aucun ticket ouvert.
               </div>
             ) : tickets.filter((t: any) => !['resolved', 'closed'].includes(t.status)).slice(0, 5).map((ticket: any) => (
               <div key={ticket.id} className="bg-background border border-border-subtle rounded-md p-4">
@@ -167,10 +168,10 @@ const SiteDashboard = () => {
                   <div className="min-w-0">
                     <h4 className="text-sm font-medium text-on-surface truncate">{ticket.title}</h4>
                     <p className="text-xs text-on-surface-variant mt-1 truncate">
-                      {ticket.equipment?.name} / {ticket.equipment?.room?.name}
+                      {ticket.equipment?.name} / {displayText(ticket.equipment?.room?.name)}
                     </p>
                   </div>
-                  <Badge status={ticket.priority === 'high' ? 'critical' : ticket.priority === 'medium' ? 'warning' : 'healthy'}>{ticket.status}</Badge>
+                  <Badge status={ticket.priority === 'high' ? 'critical' : ticket.priority === 'medium' ? 'warning' : 'healthy'}>{displayStatus(ticket.status)}</Badge>
                 </div>
               </div>
             ))}
@@ -183,24 +184,24 @@ const SiteDashboard = () => {
         <div className="bg-bg-surface border border-border-subtle rounded-lg p-6 flex flex-col">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h3 className="text-lg font-sans font-medium text-on-surface">Alarms</h3>
-              <p className="text-sm text-on-surface-variant mt-1">Current causes needing review.</p>
+              <h3 className="text-lg font-sans font-medium text-on-surface">Alarmes</h3>
+              <p className="text-sm text-on-surface-variant mt-1">Causes actuelles à examiner.</p>
             </div>
-            <Link to={`/sites/${site.id}/incidents`} className="text-xs text-primary hover:underline">Incident Center</Link>
+            <Link to={`/sites/${site.id}/incidents`} className="text-xs text-primary hover:underline">Centre incidents</Link>
           </div>
           <div className="space-y-3 flex-1">
             {alarms.length === 0 ? (
               <div className="bg-background border border-border-subtle rounded-md p-4 text-sm text-on-surface-variant flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-status-healthy" /> No active alarms.
+                <CheckCircle className="w-4 h-4 text-status-healthy" /> Aucune alarme active.
               </div>
             ) : alarms.slice(0, 5).map((alarm: any) => (
               <div key={alarm.id} className="bg-background border border-border-subtle rounded-md p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <h4 className="text-sm font-medium text-on-surface truncate">{alarm.description}</h4>
-                    <p className="text-xs text-on-surface-variant mt-1 truncate">{alarm.equipment?.name} / {alarm.equipment?.room?.name}</p>
+                    <h4 className="text-sm font-medium text-on-surface truncate">{displayOperationalText(alarm.description)}</h4>
+                    <p className="text-xs text-on-surface-variant mt-1 truncate">{alarm.equipment?.name} / {displayText(alarm.equipment?.room?.name)}</p>
                   </div>
-                  <Badge status={alarm.severity}>{alarm.severity.toUpperCase()}</Badge>
+                  <Badge status={alarm.severity}>{displayStatus(alarm.severity, true)}</Badge>
                 </div>
               </div>
             ))}

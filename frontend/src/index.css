@@ -21,15 +21,15 @@
     --fc-button-border-color: #334155;
     --fc-button-hover-bg-color: #334155;
     --fc-button-hover-border-color: #334155;
-    --fc-button-active-bg-color: #fff2d1;
-    --fc-button-active-border-color: #fff2d1;
+    --fc-button-active-bg-color: #ffD200;
+    --fc-button-active-border-color: #ffD200;
     --fc-button-active-text-color: #3b2f00;
 
-    --fc-event-bg-color: #fff2d1;
-    --fc-event-border-color: #fff2d1;
+    --fc-event-bg-color: #ffD200;
+    --fc-event-border-color: #ffD200;
     --fc-event-text-color: #3b2f00;
     
-    --fc-today-bg-color: rgba(255, 242, 209, 0.1);
+    --fc-today-bg-color: rgba(255, 210, 0, 0.1);
     
     @apply font-sans;
   }
@@ -50,4 +50,3 @@
     @apply rounded shadow-sm text-xs border-none px-1 py-0.5;
   }
 }
-

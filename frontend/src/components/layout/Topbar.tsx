@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
 import { useSites } from '../../hooks/useSites';
 import { NotificationTray } from '../ui/NotificationTray';
+import { displayRole, displayText } from '../../lib/frenchLabels';
 
 const fallbackSiteName = (siteId?: string) => {
   if (siteId === 'msc10-blida') return 'MSC10 Blida';
@@ -22,95 +23,95 @@ const Topbar = () => {
       const siteId = siteMatch[1];
       const section = siteMatch[2] || 'dashboard';
       const site = sites?.find((item: any) => item.id === siteId);
-      const siteName = site?.name || fallbackSiteName(siteId);
-      const siteLocation = site?.location || (siteId === 'msc10-blida' ? 'Blida, Algeria' : 'Selected site');
+      const siteName = displayText(site?.name || fallbackSiteName(siteId));
+      const siteLocation = displayText(site?.location || (siteId === 'msc10-blida' ? 'Blida, Algeria' : 'Selected site'));
 
       if (section === 'digital-twin') {
         return {
-          title: `${siteName} Digital Twin`,
-          subtitle: 'Physical room health, live telemetry, tickets, and active alarms.'
+          title: `${siteName} Jumeau numerique`,
+          subtitle: 'Santé des salles, télémétrie en direct, tickets et alarmes actives.'
         };
       }
 
       if (section === 'power-flow') {
         return {
-          title: `${siteName} Power Flow`,
-          subtitle: 'Electrical topology and live equipment status.'
+          title: `${siteName} Flux électrique`,
+          subtitle: 'Topologie électrique et état des équipements en direct.'
         };
       }
 
       if (section === 'incidents') {
         return {
-          title: `${siteName} Incident Center`,
-          subtitle: 'Site alarms, expert diagnosis, and ticket escalation.'
+          title: `${siteName} Centre incidents`,
+          subtitle: 'Alarmes du site, diagnostic expert et escalade des tickets.'
         };
       }
 
       if (section === 'tickets') {
         return {
           title: `${siteName} Tickets`,
-          subtitle: 'Alarm-created and manually launched intervention tickets.'
+          subtitle: 'Tickets d’intervention créés depuis les alarmes ou lancés manuellement.'
         };
       }
 
       if (section === 'reports') {
         return {
-          title: `${siteName} Reports`,
-          subtitle: 'Engineer responses submitted from intervention tickets.'
+          title: `${siteName} Rapports`,
+          subtitle: 'Réponses ingénieur soumises depuis les tickets d’intervention.'
         };
       }
 
       return {
-        title: `${siteName} Dashboard`,
-        subtitle: `${siteLocation} operational health and active alarms.`
+        title: `${siteName} Tableau de bord`,
+        subtitle: `Santé opérationnelle et alarmes actives - ${siteLocation}.`
       };
     }
 
     if (pathname === '/') {
       return {
-        title: 'National Operations',
-        subtitle: 'Real-time overview of all Djezzy infrastructure.'
+        title: 'Opérations nationales',
+        subtitle: 'Vue en temps réel de toute l’infrastructure Djezzy.'
       };
     }
 
     const headers: Record<string, { title: string; subtitle: string }> = {
       '/incidents': {
-        title: 'Incident Diagnosis Center',
-        subtitle: 'Live alarms, rule-based diagnosis, and ticket escalation.'
+        title: 'Centre de diagnostic des incidents',
+        subtitle: 'Alarmes en direct, diagnostic par règles et escalade des tickets.'
       },
       '/tickets': {
-        title: 'All Site Tickets',
-        subtitle: 'Alarm-created and manually launched intervention tickets.'
+        title: 'Tous les tickets sites',
+        subtitle: 'Tickets d’intervention créés depuis les alarmes ou lancés manuellement.'
       },
       '/maintenance': {
-        title: 'Maintenance & Scheduling',
-        subtitle: 'Preventative maintenance and inspection schedules.'
+        title: 'Maintenance et planification',
+        subtitle: 'Maintenance preventive et calendriers d’inspection.'
       },
       '/mantainancehistory': {
-        title: 'Maintenance History',
-        subtitle: 'Completed maintenance records, reports, and equipment state.'
+        title: 'Historique maintenance',
+        subtitle: 'Interventions terminées, rapports et état des équipements.'
       },
       '/knowledge': {
-        title: 'Knowledge Center',
-        subtitle: 'Engineering documentation and standard operating procedures.'
+        title: 'Centre de connaissances',
+        subtitle: 'Documentation technique et procédures opérationnelles standard.'
       },
       '/reports': {
-        title: 'All Ticket Reports',
-        subtitle: 'Engineer responses submitted from intervention tickets.'
+        title: 'Tous les rapports de tickets',
+        subtitle: 'Réponses ingénieur soumises depuis les tickets d’intervention.'
       },
       '/notifications': {
         title: 'Notifications',
-        subtitle: 'Live simulated alarms and operator workflow updates.'
+        subtitle: 'Alarmes simulees en direct et mises à jour du flux operateur.'
       },
       '/settings': {
-        title: 'Platform Settings',
-        subtitle: 'Configure global platform thresholds and expert system logic.'
+        title: 'Paramètres plateforme',
+        subtitle: 'Configurer les seuils globaux et la logique du système expert.'
       }
     };
 
     return headers[pathname] || {
       title: 'DDN',
-      subtitle: 'Djezzy Data Nexus operations platform.'
+      subtitle: 'Plateforme opérationnelle Djezzy Data Nexus.'
     };
   }, [location.pathname, sites]);
 
@@ -131,7 +132,7 @@ const Topbar = () => {
           </div>
           <div className="hidden md:block text-sm">
             <p className="font-medium text-on-surface leading-tight">{user?.firstName} {user?.lastName}</p>
-            <p className="text-xs text-on-surface-variant font-mono">{user?.role}</p>
+            <p className="text-xs text-on-surface-variant font-mono">{displayRole(user?.role)}</p>
           </div>
         </div>
       </div>

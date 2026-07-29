@@ -88,7 +88,7 @@ router.get('/', requireAuth, async (req: any, res: Response) => {
     });
     res.json(tasks);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch maintenance tasks' });
+    res.status(500).json({ error: 'Échec du chargement des tâches de maintenance' });
   }
 });
 
@@ -96,7 +96,7 @@ router.post('/', requireAuth, requireRole(['Site Operator']), async (req: any, r
   const { title, equipmentId, status, assignedTo, scheduledDate } = req.body;
 
   if (!title || !equipmentId || !scheduledDate) {
-    return res.status(400).json({ error: 'title, equipmentId, and scheduledDate are required' });
+    return res.status(400).json({ error: 'title, equipmentId et scheduledDate sont requis' });
   }
 
   try {
@@ -122,7 +122,7 @@ router.post('/', requireAuth, requireRole(['Site Operator']), async (req: any, r
       await prisma.notification.create({
         data: {
           userId: assignedTo,
-          message: `Maintenance scheduled: ${task.title}`
+          message: `Maintenance planifiee : ${task.title}`
         }
       });
     }
@@ -130,7 +130,7 @@ router.post('/', requireAuth, requireRole(['Site Operator']), async (req: any, r
     res.status(201).json(task);
   } catch (error) {
     console.error('Create maintenance task error:', error);
-    res.status(500).json({ error: 'Failed to create maintenance task' });
+    res.status(500).json({ error: 'Échec de la création de la tâche de maintenance' });
   }
 });
 
@@ -156,7 +156,7 @@ router.get('/history', requireAuth, async (req: any, res: Response) => {
     res.json(tasks);
   } catch (error) {
     console.error('Fetch maintenance history error:', error);
-    res.status(500).json({ error: 'Failed to fetch maintenance history' });
+    res.status(500).json({ error: 'Échec du chargement de l’historique maintenance' });
   }
 });
 
@@ -172,7 +172,7 @@ router.get('/schedules', requireAuth, async (req: any, res: Response) => {
     });
     res.json(schedules);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch maintenance schedules' });
+    res.status(500).json({ error: 'Échec du chargement des planifications de maintenance' });
   }
 });
 
@@ -190,7 +190,7 @@ router.delete('/schedules/:id', requireAuth, requireRole(['Site Operator']), asy
       }
     });
 
-    if (!schedule) return res.status(404).json({ error: 'Maintenance schedule not found' });
+    if (!schedule) return res.status(404).json({ error: 'Planification de maintenance introuvable' });
 
     await prisma.maintenanceSchedule.delete({
       where: { id: schedule.id }
@@ -204,7 +204,7 @@ router.delete('/schedules/:id', requireAuth, requireRole(['Site Operator']), asy
     res.status(204).send();
   } catch (error) {
     console.error('Delete maintenance schedule error:', error);
-    res.status(500).json({ error: 'Failed to delete maintenance schedule' });
+    res.status(500).json({ error: 'Échec de la suppression de la planification de maintenance' });
   }
 });
 
@@ -213,7 +213,7 @@ router.post('/schedules', requireAuth, requireRole(['Site Operator']), async (re
   const { title, equipmentId, recurrence, assignedTo, startDate } = req.body;
 
   if (!title || !equipmentId || !recurrence || !startDate) {
-    return res.status(400).json({ error: 'title, equipmentId, recurrence, and startDate are required' });
+    return res.status(400).json({ error: 'title, equipmentId, recurrence et startDate sont requis' });
   }
 
   try {
@@ -233,7 +233,7 @@ router.post('/schedules', requireAuth, requireRole(['Site Operator']), async (re
     res.status(201).json(schedule);
   } catch (error) {
     console.error('Create maintenance schedule error:', error);
-    res.status(500).json({ error: 'Failed to create maintenance schedule' });
+    res.status(500).json({ error: 'Échec de la création de la planification de maintenance' });
   }
 });
 
@@ -251,7 +251,7 @@ router.delete('/tasks/:id', requireAuth, requireRole(['Site Operator']), async (
       }
     });
 
-    if (!task) return res.status(404).json({ error: 'Maintenance task not found' });
+    if (!task) return res.status(404).json({ error: 'Tâche de maintenance introuvable' });
 
     await prisma.maintenanceTask.delete({
       where: { id: task.id }
@@ -265,7 +265,7 @@ router.delete('/tasks/:id', requireAuth, requireRole(['Site Operator']), async (
     res.status(204).send();
   } catch (error) {
     console.error('Delete maintenance task error:', error);
-    res.status(500).json({ error: 'Failed to delete maintenance task' });
+    res.status(500).json({ error: 'Échec de la suppression de la tâche de maintenance' });
   }
 });
 
@@ -275,12 +275,12 @@ router.post('/tasks/:id/report', requireAuth, requireRole(['Engineer', 'Super Ad
   const taskId = String(req.params.id);
 
   if (!actionTaken || !currentState) {
-    return res.status(400).json({ error: 'actionTaken and currentState are required' });
+    return res.status(400).json({ error: 'actionTaken et currentState sont requis' });
   }
 
   try {
     const task = await prisma.maintenanceTask.findUnique({ where: { id: taskId } });
-    if (!task) return res.status(404).json({ error: 'Maintenance task not found' });
+    if (!task) return res.status(404).json({ error: 'Tâche de maintenance introuvable' });
 
     // Create the report
     await prisma.maintenanceReport.create({
@@ -303,7 +303,7 @@ router.post('/tasks/:id/report', requireAuth, requireRole(['Engineer', 'Super Ad
     res.status(201).json(updatedTask);
   } catch (error) {
     console.error('Create maintenance report error:', error);
-    res.status(500).json({ error: 'Failed to submit maintenance report' });
+    res.status(500).json({ error: 'Échec de la soumission du rapport de maintenance' });
   }
 });
 
