@@ -1,34 +1,58 @@
 # Djezzy Data Nexus
 
-Djezzy Data Nexus (DDN) is a full-stack decision-support platform for telecom infrastructure operations. It combines site health monitoring, a digital twin, incident diagnosis, ticket workflows, maintenance planning, notifications, and French-localized operational dashboards.
+Djezzy Data Nexus (DDN) is a full-stack decision-support platform for telecom infrastructure operations. It gives operations teams one web console for site health monitoring, digital-twin views, incident diagnosis, ticket workflows, maintenance planning, notifications, knowledge-base content, and French-localized reporting.
+
+The demo data focuses on Djezzy telecom facilities in Algeria, especially the MSC10 Blida site.
+
+## Main Features
+
+- Role-based login for Super Admin, Engineer, and Site Operator users.
+- National operations dashboard with fleet-level KPIs.
+- Site dashboard for health, alarms, equipment status, and telemetry.
+- Digital twin and power-flow views for infrastructure inspection.
+- Incident diagnosis center backed by expert-system knowledge.
+- Kanban-style ticket lifecycle with assignments and reports.
+- Maintenance calendar, schedule management, and maintenance history.
+- Notifications and operational knowledge base.
+- Python SCADA expert system with deterministic rule tests and replay support.
 
 ## Tech Stack
 
-- Backend: Node.js, Express, Socket.IO, Prisma, PostgreSQL
-- Frontend: React, TypeScript, Vite, Tailwind CSS, React Query
-- Local database: PostgreSQL via Docker Compose
+- Frontend: React, TypeScript, Vite, Tailwind CSS, React Query, Zustand, Socket.IO client.
+- Backend: Node.js, Express, Socket.IO, Prisma, PostgreSQL.
+- Expert system: Python 3 standard library.
+- Local services: PostgreSQL through Docker Compose.
 
 ## Prerequisites
 
-- Node.js 22 or newer
-- npm
-- Docker and Docker Compose
+- Node.js 22 or newer.
+- npm 11 or newer.
+- Python 3.10 or newer.
+- Docker and Docker Compose.
+
+The project was verified locally with Node.js `v24.16.0`, npm `11.13.0`, Python `3.12.3`, and Docker `29.6.2`.
 
 ## Quick Start
 
-Start the PostgreSQL database:
-
-```bash
-docker compose up -d db
-```
-
-Install dependencies:
+Install all JavaScript dependencies:
 
 ```bash
 npm run install:all
 ```
 
-Prepare and seed the database:
+Create the backend environment file:
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+Start PostgreSQL:
+
+```bash
+npm run db:up
+```
+
+Create the database schema and seed demo data:
 
 ```bash
 npm run db:push
@@ -47,7 +71,7 @@ In another terminal, start the frontend:
 npm run frontend:dev
 ```
 
-Open the frontend URL printed by Vite, usually:
+Open the Vite URL, usually:
 
 ```text
 http://localhost:5173
@@ -59,9 +83,15 @@ The API runs on:
 http://localhost:4000
 ```
 
+Health check:
+
+```text
+http://localhost:4000/api/health
+```
+
 ## Demo Accounts
 
-All seeded users use the password:
+All seeded users use this password:
 
 ```text
 admin123
@@ -69,23 +99,36 @@ admin123
 
 Available accounts:
 
-- `admin@djezzy.dz` - Super administrator
-- `engineer@djezzy.dz` - Engineer
-- `operator@djezzy.dz` - Site operator
+| Email | Role | Default Landing Area |
+| --- | --- | --- |
+| `admin@djezzy.dz` | Super Admin | National operations dashboard |
+| `engineer@djezzy.dz` | Engineer | MSC10 Blida site dashboard |
+| `operator@djezzy.dz` | Site Operator | MSC10 Blida incidents |
 
 ## Environment
 
-The backend reads its local environment from [backend/.env](backend/.env). The committed file is configured for the Docker Compose database:
+Backend configuration lives in `backend/.env`. Use `backend/.env.example` as the template:
 
 ```text
 DATABASE_URL="postgresql://admin:password123@localhost:5432/djezzy_ssop?schema=public"
+JWT_SECRET="change-this-for-production"
 PORT=4000
+HOST=0.0.0.0
+FRONTEND_URL=http://localhost:5173
 ```
 
-Optional frontend override:
+Frontend configuration is optional. By default the frontend infers the API as `http://<current-host>:4000`.
+
+To override it:
 
 ```bash
 cp frontend/.env.example frontend/.env.local
+```
+
+Then edit:
+
+```text
+VITE_API_URL=http://localhost:4000
 ```
 
 ## Useful Commands
@@ -94,23 +137,106 @@ cp frontend/.env.example frontend/.env.local
 npm run install:all       # install backend and frontend dependencies
 npm run db:up             # start local PostgreSQL
 npm run db:push           # sync Prisma schema to PostgreSQL
-npm run db:seed           # seed demo users, sites, equipment, rules, and tickets
-npm run backend:dev       # start Express API with telemetry simulation
+npm run db:seed           # seed roles, users, sites, equipment, rules, tickets, and content
+npm run backend:dev       # start Express API with Socket.IO and telemetry simulation
 npm run frontend:dev      # start Vite dev server
-npm run check             # backend typecheck + frontend production build
+npm run frontend:build    # typecheck and build the frontend
+npm run backend:typecheck # typecheck backend TypeScript
+npm run frontend:lint     # run frontend lint checks
+npm run scada:test        # run deterministic SCADA expert-system tests
+npm run check             # backend typecheck + frontend lint + frontend production build
+npm run verify            # full project verification, including SCADA tests
+```
+
+Run only the SCADA expert-system checks:
+
+```bash
+cd scada_expert_system
+python3 test_rules.py
 ```
 
 ## Project Layout
 
 ```text
-backend/        Express API, Prisma schema, seed data, domain services
-frontend/       React/Vite application
-docs/           Product and agent reference documentation
-docker-compose.yml
+backend/              Express API, Prisma schema, seed data, domain services
+frontend/             React/Vite web application
+scada_expert_system/  Python SCADA diagnostic rules engine and tests
+data/                 Simulated telecom telemetry CSV data
+docs/                 Product, UX, data, and design documentation
+docker-compose.yml    Local PostgreSQL service
+package.json          Root scripts for setup, development, and verification
 ```
 
-## Notes
+## Backend Notes
 
-- The backend starts telemetry simulation automatically.
-- CORS allows local network origins by default; set `FRONTEND_URL` in `backend/.env` for stricter origin control.
-- The original product/agent guide lives in [docs/AGENT_GUIDE.md](docs/AGENT_GUIDE.md).
+- The API starts the telemetry simulator automatically when the backend process starts.
+- Socket.IO broadcasts live updates to the frontend.
+- Prisma uses PostgreSQL through the `@prisma/adapter-pg` adapter.
+- CORS accepts configured `FRONTEND_URL` values. Without that setting, local network origins are allowed for easier demos.
+- The seeded MVP authentication intentionally accepts `admin123` for all seeded users.
+
+## Frontend Notes
+
+- The application is protected by a login route and role-aware route boundaries.
+- The default API URL is inferred from the browser host and port `4000`.
+- Static visual assets are stored in `frontend/public` and `frontend/src/assets`.
+- Production output is generated in `frontend/dist` and is not needed in the source archive.
+
+## SCADA Expert System
+
+The Python expert system in `scada_expert_system/` implements SCADA diagnostic rules for telecom data-center operations. It can run in two modes:
+
+```bash
+cd scada_expert_system
+python3 main.py
+```
+
+Runs the real-time simulator and writes diagnostic events to a local JSONL log.
+
+```bash
+cd scada_expert_system
+python3 replay.py path/to/ALARMES_SCADA_2022_enriched.csv
+```
+
+Replays a historical SCADA alarm CSV through the rules engine.
+
+## Verification
+
+Before packaging, the project was verified with:
+
+```bash
+npm run verify
+```
+
+Result:
+
+- Backend TypeScript typecheck passed.
+- Frontend TypeScript build and Vite production build passed.
+- Frontend lint passed with no warnings.
+- SCADA expert-system script tests passed: 12 OK / 0 failures.
+- Vite reported one large JavaScript bundle warning, but the build completed successfully.
+
+## Submission Archive
+
+The judge submission archive should include source code, lockfiles, documentation, data, and configuration templates.
+
+It should exclude:
+
+- `node_modules/`
+- `frontend/dist/`
+- `.git/`
+- local `.env` files
+- local database files such as `*.db`
+- Python `__pycache__/`
+- generated `diagnostics_log*.jsonl`
+- previous zip archives
+
+The prepared archive is:
+
+```text
+djezzy-data-nexus-judge-submission.zip
+```
+
+## Documentation
+
+Additional project material is available in `docs/`, including product vision, UX strategy, screen-by-screen UI notes, data description, design system, and agent guide.

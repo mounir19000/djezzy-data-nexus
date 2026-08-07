@@ -11,7 +11,10 @@
     "backend:dev": "npm --prefix backend run dev",
     "backend:typecheck": "npm --prefix backend run typecheck",
     "frontend:dev": "npm --prefix frontend run dev",
+    "frontend:lint": "npm --prefix frontend run lint",
     "frontend:build": "npm --prefix frontend run build",
-    "check": "npm run backend:typecheck && npm run frontend:build"
+    "scada:test": "cd scada_expert_system && python3 test_rules.py",
+    "check": "npm run backend:typecheck && npm run frontend:lint && npm run frontend:build",
+    "verify": "npm run check && npm run scada:test"
   }
 }

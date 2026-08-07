@@ -8,6 +8,8 @@ import { displayOperationalText, displayStatus, displayText } from '../../lib/fr
 
 const unique = (items: string[]) => [...new Set(items.filter(Boolean))].sort((a, b) => a.localeCompare(b));
 
+const EMPTY_ARTICLES: any[] = [];
+
 const asText = (value: unknown) => String(value || '').toLowerCase();
 
 const fieldMatches = (items: string[] | undefined, query: string) => {
@@ -30,7 +32,7 @@ const KnowledgeCenter = () => {
   const { user } = useAppStore();
   const [formError, setFormError] = useState<string | null>(null);
 
-  const articles = knowledgeBase || [];
+  const articles = knowledgeBase ?? EMPTY_ARTICLES;
   const canCreate = user?.role === 'Super Admin' || user?.role === 'Engineer';
 
   useEffect(() => {
