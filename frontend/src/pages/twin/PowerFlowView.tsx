@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import ReactFlow, { Background, Controls } from 'reactflow';
 import type { Edge, Node } from 'reactflow';
@@ -15,6 +15,8 @@ const statusColor: Record<FlowStatus, string> = {
   critical: '#EF4444',
   offline: '#64748B'
 };
+
+const EMPTY_ROOMS: any[] = [];
 
 const nodeStyle = (status: FlowStatus) => ({
   background: status === 'critical' ? '#3a1114' : status === 'warning' ? '#33280f' : '#181B22',
@@ -38,37 +40,39 @@ const PowerFlowView = () => {
   const equipmentData = useTelemetryStore(state => state.equipmentData);
   const siteId = params.siteId || searchParams.get('siteId') || 'msc10-blida';
   const { data: currentSite, isLoading, isError } = useSite(siteId);
-  const rooms = currentSite?.rooms || [];
-  const allEquipment = currentSite?.rooms?.flatMap((room: any) => room.equipments || []) || [];
-  const hasDetailedTopology = siteId === 'msc10-blida' && allEquipment.some((item: any) => item.name === 'UPS');
+  const rooms = currentSite?.rooms ?? EMPTY_ROOMS;
+  const allEquipment = useMemo(() => rooms.flatMap((room: any) => room.equipments || []), [rooms]);
+  const hasDetailedTopology = useMemo(() => (
+    siteId === 'msc10-blida' && allEquipment.some((item: any) => item.name === 'UPS')
+  ), [allEquipment, siteId]);
 
   const [tooltip, setTooltip] = useState<{ x: number, y: number, alarms: any[], label: string } | null>(null);
 
-  const getAlarmsForEquipment = (name: string) => {
+  const getAlarmsForEquipment = useCallback((name: string) => {
     const equipment = allEquipment.find((item: any) => item.name === name);
     return equipment?.alarms || [];
-  };
+  }, [allEquipment]);
 
-  const getAlarmsForRoom = (room: any) => {
+  const getAlarmsForRoom = useCallback((room: any) => {
     return room.equipments?.flatMap((item: any) => item.alarms || []) || [];
-  };
+  }, []);
 
-  const statusForEquipment = (name: string): FlowStatus => {
+  const statusForEquipment = useCallback((name: string): FlowStatus => {
     const equipment = allEquipment.find((item: any) => item.name === name);
     if (!equipment) return 'healthy';
     if (equipment.status === 'offline') return 'offline';
     if (equipment.alarms?.some((alarm: any) => alarm.severity === 'critical')) return 'critical';
     if (equipment.alarms?.length || equipment.status === 'warning') return 'warning';
     return 'healthy';
-  };
+  }, [allEquipment]);
 
-  const statusForRoom = (room: any): FlowStatus => {
+  const statusForRoom = useCallback((room: any): FlowStatus => {
     const equipment = room.equipments || [];
     if (equipment.some((item: any) => item.status === 'offline')) return 'offline';
     if (equipment.some((item: any) => item.alarms?.some((alarm: any) => alarm.severity === 'critical'))) return 'critical';
     if (equipment.some((item: any) => item.status === 'warning' || item.alarms?.length)) return 'warning';
     return 'healthy';
-  };
+  }, []);
 
   const ups = Object.values(equipmentData).find(e => e.equipmentName === 'UPS');
   const upsLoad = ups?.metrics?.load || 54;
@@ -109,7 +113,20 @@ const PowerFlowView = () => {
         };
       })
     ])
-  ], [atsStatus, coolingStatus, currentSite?.name, generatorStatus, hasDetailedTopology, rooms, upsLoad, upsStatus, allEquipment]);
+  ], [
+    atsStatus,
+    coolingStatus,
+    currentSite?.name,
+    generatorStatus,
+    getAlarmsForEquipment,
+    getAlarmsForRoom,
+    hasDetailedTopology,
+    rooms,
+    statusForEquipment,
+    statusForRoom,
+    upsLoad,
+    upsStatus
+  ]);
 
   const edges: Edge[] = useMemo(() => [
     ...(hasDetailedTopology ? [
@@ -134,7 +151,16 @@ const PowerFlowView = () => {
         style: edgeStyle(statusForRoom(room))
       }))
     ])
-  ], [atsStatus, coolingStatus, generatorStatus, hasDetailedTopology, rooms, upsStatus, allEquipment]);
+  ], [
+    atsStatus,
+    coolingStatus,
+    generatorStatus,
+    hasDetailedTopology,
+    rooms,
+    statusForEquipment,
+    statusForRoom,
+    upsStatus
+  ]);
 
   const handleNodeMouseEnter = (event: React.MouseEvent, node: Node) => {
     const alarms = node.data?.alarms;
