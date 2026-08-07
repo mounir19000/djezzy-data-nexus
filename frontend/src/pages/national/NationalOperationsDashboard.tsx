@@ -8,6 +8,8 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { displayOperationalText, displayText, formatTime } from '../../lib/frenchLabels';
 
+const EMPTY_ITEMS: any[] = [];
+
 const statusForHealth = (health: number): 'healthy' | 'warning' | 'critical' => {
   if (health >= 90) return 'healthy';
   if (health >= 70) return 'warning';
@@ -23,8 +25,8 @@ const markerIcon = (status: 'healthy' | 'warning' | 'critical') => L.divIcon({
 
 const NationalOperationsDashboard = () => {
   const { data: metrics, isLoading } = useDashboardMetrics();
-  const liveFeed = metrics?.feed || [];
-  const sites = metrics?.sites || [];
+  const liveFeed = metrics?.feed ?? EMPTY_ITEMS;
+  const sites = metrics?.sites ?? EMPTY_ITEMS;
   const rankedSites = useMemo(() => [...sites].sort((a: any, b: any) => a.overallHealth - b.overallHealth), [sites]);
 
   return (

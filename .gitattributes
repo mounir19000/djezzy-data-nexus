@@ -1,0 +1,11 @@
+backend/.env export-ignore
+frontend/dist/ export-ignore
+scada_expert_system/__pycache__/ export-ignore
+scada_expert_system/diagnostics_log*.jsonl export-ignore
+frontend/src/assets/hero.png export-ignore
+frontend/src/assets/react.svg export-ignore
+frontend/src/assets/vite.svg export-ignore
+image.webp export-ignore
+*.db export-ignore
+*.db-journal export-ignore
+*.zip export-ignore
