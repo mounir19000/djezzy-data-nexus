@@ -1,10 +1,14 @@
 import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 import { prisma } from '../config/prisma';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'djezzy_super_secret_jwt_key_2026';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is not set');
+}
 
 router.post('/login', async (req: Request, res: Response) => {
   const { email, password } = req.body;
@@ -22,12 +26,8 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(401).json({ error: { message: 'Email ou mot de passe invalide' } });
     }
 
-    // In a real app, compare bcrypt hash. For this MVP, all seeded users share admin123.
-    if (user.passwordHash === 'hashed_password_mock') {
-      if (password !== 'admin123') {
-        return res.status(401).json({ error: { message: 'Email ou mot de passe invalide' } });
-      }
-    } else if (password !== user.passwordHash) {
+    const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+    if (!isValidPassword) {
       return res.status(401).json({ error: { message: 'Email ou mot de passe invalide' } });
     }
 

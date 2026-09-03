@@ -107,15 +107,13 @@ Available accounts:
 
 ## Environment
 
-Backend configuration lives in `backend/.env`. Use `backend/.env.example` as the template:
+The backend reads its local environment from `backend/.env`. Copy the example file to get started:
 
-```text
-DATABASE_URL="postgresql://admin:password123@localhost:5432/djezzy_ssop?schema=public"
-JWT_SECRET="change-this-for-production"
-PORT=4000
-HOST=0.0.0.0
-FRONTEND_URL=http://localhost:5173
+```bash
+cp backend/.env.example backend/.env
 ```
+
+Configure your `DATABASE_URL` and `JWT_SECRET` in the new `.env` file. The default password for the local Docker Compose database is `postgres`.
 
 Frontend configuration is optional. By default the frontend infers the API as `http://<current-host>:4000`.
 

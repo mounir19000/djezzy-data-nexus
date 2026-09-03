@@ -15,8 +15,8 @@ import { API_BASE_URL } from '../../lib/api';
 import { useAppStore } from '../../store/useAppStore';
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('admin@djezzy.dz');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);

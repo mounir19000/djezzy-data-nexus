@@ -1,6 +1,7 @@
 import { prisma } from '../src/config/prisma';
+import bcrypt from 'bcrypt';
 
-const passwordHash = 'hashed_password_mock';
+const passwordHash = bcrypt.hashSync('admin123', 10);
 const desiredRoomIds = [
   'room-ups',
   'room-battery',
